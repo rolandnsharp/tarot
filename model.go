@@ -40,6 +40,10 @@ func newTextInput() textinput.Model {
 	ti.Placeholder = "ask the cards a question ... or don't ..."
 	ti.CharLimit = 200
 	ti.Width = 50
+	ti.TextStyle = lipgloss.NewStyle().Foreground(colorLavender)
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(colorLavender)
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#6b5b7b"))
+	ti.Cursor.Style = lipgloss.NewStyle().Foreground(colorLavender)
 	ti.Focus() // sets focus state; cmd discarded (cursor won't blink but input works)
 	return ti
 }
