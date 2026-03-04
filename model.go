@@ -10,8 +10,7 @@ import (
 )
 
 type tickMsg time.Time
-type connectMsg struct{}
-type waitAnimMsg time.Time
+type typewriterMsg time.Time
 
 type model struct {
 	cards    []Card
@@ -25,17 +24,18 @@ type model struct {
 	textInput textinput.Model
 
 	// LLM reading
-	config      *Config
-	readingCh   <-chan streamMsg
-	readingText string
-	readingDone  bool
-	readingErr   error
-	waitFrame    int
+	config        *Config
+	readingCh     <-chan streamMsg
+	readingBuffer string // full text received from LLM so far
+	readingText   string // text revealed to user (typewriter)
+	revealIndex   int    // how many bytes of buffer are revealed
+	readingDone   bool
+	readingErr    error
 }
 
 func newTextInput() textinput.Model {
 	ti := textinput.New()
-	ti.Placeholder = "Ask the cards a question..."
+	ti.Placeholder = "ask the cards a question ... or don't ..."
 	ti.CharLimit = 200
 	ti.Width = 50
 	ti.Focus() // sets focus state; cmd discarded (cursor won't blink but input works)
@@ -60,9 +60,12 @@ func tickCmd() tea.Cmd {
 	})
 }
 
-func waitAnimCmd() tea.Cmd {
-	return tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-		return waitAnimMsg(t)
+const typewriterInterval = 50 * time.Millisecond
+const charsPerTick = 2 // ~40 chars/sec speaking pace
+
+func typewriterCmd() tea.Cmd {
+	return tea.Tick(typewriterInterval, func(t time.Time) tea.Msg {
+		return typewriterMsg(t)
 	})
 }
 
@@ -82,7 +85,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				m.question = m.textInput.Value()
 				m.anim.Start()
-				return m, tickCmd()
+				cmds := []tea.Cmd{tickCmd()}
+				if m.config != nil {
+					m.readingCh = startReading(*m.config, m.cards, m.question)
+					cmds = append(cmds, waitForStream(m.readingCh))
+				}
+				return m, tea.Batch(cmds...)
 			}
 			var cmd tea.Cmd
 			m.textInput, cmd = m.textInput.Update(msg)
@@ -101,10 +109,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.question = ""
 			m.textInput = newTextInput()
 			m.readingCh = nil
+			m.readingBuffer = ""
 			m.readingText = ""
+			m.revealIndex = 0
 			m.readingDone = false
 			m.readingErr = nil
-			m.waitFrame = 0
 			return m, nil
 		}
 
@@ -117,35 +126,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tickMsg:
 		if m.anim.Phase == PhaseReading {
-			return m, nil // no more ticks needed
+			return m, nil // no more animation ticks needed
 		}
 		m.anim.Tick()
 		if m.anim.Phase == PhaseDisplay && m.config != nil {
-			// Enter reading phase as soon as cards are revealed
 			m.anim.Phase = PhaseReading
-			return m, tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg {
-				return connectMsg{}
-			})
+			return m, typewriterCmd()
 		}
 		if m.anim.Phase == PhaseDisplay {
-			// No config — stop ticking
 			return m, nil
 		}
 		return m, tickCmd()
 
-	case connectMsg:
-		m.readingCh = startReading(*m.config, m.cards, m.question)
-		return m, tea.Batch(waitForStream(m.readingCh), waitAnimCmd())
-
-	case waitAnimMsg:
-		m.waitFrame++
-		if m.readingText == "" && m.readingErr == nil {
-			return m, waitAnimCmd()
+	case typewriterMsg:
+		if m.revealIndex < len(m.readingBuffer) {
+			m.revealIndex += charsPerTick
+			if m.revealIndex > len(m.readingBuffer) {
+				m.revealIndex = len(m.readingBuffer)
+			}
+			m.readingText = m.readingBuffer[:m.revealIndex]
+			return m, typewriterCmd()
 		}
+		if !m.readingDone {
+			// Buffer exhausted, wait for more from LLM
+			return m, typewriterCmd()
+		}
+		// All text revealed
+		m.readingText = m.readingBuffer
 		return m, nil
 
 	case readingChunkMsg:
-		m.readingText += msg.Text
+		m.readingBuffer += msg.Text
 		return m, waitForStream(m.readingCh)
 
 	case readingDoneMsg:
@@ -168,11 +179,7 @@ func (m model) View() string {
 
 	var s strings.Builder
 
-	// Title
-	title := titleStyle.Width(m.width).Render("✦ T A R O T ✦")
-	s.WriteString(title + "\n")
-	subtitle := subtitleStyle.Width(m.width).Render("Three-Card Spread")
-	s.WriteString(subtitle + "\n\n")
+	s.WriteString("\n\n")
 
 	switch m.anim.Phase {
 	case PhaseIdle:
@@ -207,8 +214,7 @@ func (m model) renderIdle() string {
 
 func (m model) renderQuestion() string {
 	input := m.textInput.View()
-	hint := questionHintStyle.Render("press enter to begin")
-	content := lipgloss.JoinVertical(lipgloss.Center, input, "", hint)
+	content := lipgloss.JoinVertical(lipgloss.Center, input)
 	return lipgloss.Place(m.width, 6, lipgloss.Center, lipgloss.Center, content)
 }
 
@@ -257,9 +263,7 @@ func (m model) renderShuffle() string {
 
 	rendered := RenderPixelBuffer(buf)
 
-	shuffleText := subtitleStyle.Width(m.width).Render("✦ Shuffling... ✦")
-
-	return rendered + "\n" + shuffleText
+	return rendered
 }
 
 func (m model) renderCards() string {
@@ -316,12 +320,7 @@ func (m model) renderReading() string {
 
 	text := m.readingText
 	if text == "" {
-		symbols := []string{"✦", "☽", "✧", "★", "✦", "☾", "✧", "★"}
-		left := symbols[m.waitFrame%len(symbols)]
-		right := symbols[(m.waitFrame+4)%len(symbols)]
-		dots := strings.Repeat(".", (m.waitFrame%3)+1)
-		msg := left + " Consulting the oracle" + dots + " " + right
-		return readingWaitStyle.Width(m.width).Render(msg)
+		return readingWaitStyle.Width(m.width).Render("✦ Consulting the oracle... ✦")
 	}
 
 	// Word-wrap to a comfortable width
@@ -334,8 +333,8 @@ func (m model) renderReading() string {
 	}
 	wrapped := wordWrap(text, wrapW)
 
-	// Add streaming cursor if not done
-	if !m.readingDone {
+	// Add cursor if still revealing
+	if m.revealIndex < len(m.readingBuffer) || !m.readingDone {
 		wrapped += readingCursorStyle.Render("_")
 	}
 

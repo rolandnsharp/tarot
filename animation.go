@@ -19,10 +19,10 @@ const (
 )
 
 const (
-	washBounceTime   = 2500 * time.Millisecond // free bounce phase
-	washConvergeTime = 800 * time.Millisecond  // converge to center
-	washSettleTime   = 400 * time.Millisecond  // rest at center (visible deck)
-	washPauseTime    = 1000 * time.Millisecond // cards picked up, empty screen
+	washBounceTime   = 3750 * time.Millisecond // free bounce phase
+	washConvergeTime = 1200 * time.Millisecond // converge to center
+	washSettleTime   = 600 * time.Millisecond  // rest at center (visible deck)
+	washPauseTime    = 1500 * time.Millisecond // cards picked up, empty screen
 	shuffleDuration  = washBounceTime + washConvergeTime + washSettleTime + washPauseTime
 	washCardW = 28
 	washCardH        = 44
@@ -72,7 +72,7 @@ func (a *AnimState) initWashCards() {
 	a.WashCards = make([]WashCard, len(Deck))
 	for i := range a.WashCards {
 		angle := rand.Float64() * 2 * math.Pi
-		speed := 5.0 + rand.Float64()*5.0
+		speed := 3.75 + rand.Float64()*3.75
 		a.WashCards[i] = WashCard{
 			X:  cx,
 			Y:  cy,
@@ -131,12 +131,12 @@ func (a *AnimState) Tick() {
 				c.Y += c.VY
 			} else {
 				// Free bounce with random perturbation
-				c.VX += (rand.Float64() - 0.5) * 1.0
-				c.VY += (rand.Float64() - 0.5) * 1.0
+				c.VX += (rand.Float64() - 0.5) * 0.75
+				c.VY += (rand.Float64() - 0.5) * 0.75
 				speed := math.Sqrt(c.VX*c.VX + c.VY*c.VY)
-				if speed > 8 {
-					c.VX = c.VX / speed * 8
-					c.VY = c.VY / speed * 8
+				if speed > 6 {
+					c.VX = c.VX / speed * 6
+					c.VY = c.VY / speed * 6
 				}
 				c.X += c.VX
 				c.Y += c.VY
