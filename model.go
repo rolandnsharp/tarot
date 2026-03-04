@@ -16,6 +16,7 @@ type typewriterMsg time.Time
 type model struct {
 	cards    []Card
 	anim     AnimState
+	music    *MusicPlayer
 	width    int
 	height   int
 	quitting bool
@@ -52,9 +53,12 @@ func initialModel() model {
 	anim := NewAnimState()
 	anim.Phase = PhaseQuestion
 	cfg, _ := LoadConfig()
+	mp := &MusicPlayer{}
+	mp.Play()
 	return model{
 		cards:     DrawThree(),
 		anim:      anim,
+		music:     mp,
 		config:    cfg,
 		textInput: newTextInput(),
 	}
@@ -85,6 +89,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.anim.Phase == PhaseQuestion {
 			switch msg.String() {
 			case "ctrl+c", "esc":
+				m.music.Stop()
 				m.quitting = true
 				return m, tea.Quit
 			case "enter":
@@ -105,9 +110,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
+			m.music.Stop()
 			m.quitting = true
 			return m, tea.Quit
 		case "r":
+			m.music.Play() // new random track
 			// Reshuffle and reset reading
 			m.cards = DrawThree()
 			m.anim = NewAnimState()

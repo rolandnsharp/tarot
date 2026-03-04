@@ -33,6 +33,20 @@ api_key: unused
 
 Works with any OpenAI-compatible API (Ollama, OpenAI, etc).
 
+## Music
+
+Place `.wav` files in a `music/` directory next to the binary. A random track will loop during each reading. Requires `aplay` (part of `alsa-utils`) for audio playback. If `aplay` is not available or the directory is missing, the app runs silently.
+
+```bash
+sudo apt install alsa-utils  # Debian/Ubuntu
+```
+
+### Included Tracks
+
+- [Luminis](https://freesound.org/s/722399/) by Vrymaa — CC0
+- [Mystical Guitar Atmosphere](https://freesound.org/s/719441/) by MichiJung — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- [Somnium](https://freesound.org/s/722400/) by Vrymaa — [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
+
 ## Controls
 
 - **Enter** — begin the reading
