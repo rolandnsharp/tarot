@@ -10,6 +10,7 @@ type Phase int
 
 const (
 	PhaseIdle Phase = iota
+	PhaseQuestion
 	PhaseShuffle
 	PhaseDeal
 	PhaseReveal

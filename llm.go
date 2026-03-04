@@ -22,7 +22,7 @@ type readingErrMsg struct{ Err error }
 // streamMsg is the union sent over the channel
 type streamMsg interface{}
 
-func buildPrompt(cfg Config, cards []Card) (system, user string) {
+func buildPrompt(cfg Config, cards []Card, question string) (system, user string) {
 	var sys strings.Builder
 	sys.WriteString("You are a tarot card reader. ")
 	if cfg.Interpreter != "" {
@@ -54,10 +54,15 @@ func buildPrompt(cfg Config, cards []Card) (system, user string) {
 	}
 	usr.WriteString("Please give the reading now.")
 
+	if question != "" {
+		usr.WriteString("\n\nThe querent's question is: ")
+		usr.WriteString(question)
+	}
+
 	return sys.String(), usr.String()
 }
 
-func startReading(cfg Config, cards []Card) <-chan streamMsg {
+func startReading(cfg Config, cards []Card, question string) <-chan streamMsg {
 	ch := make(chan streamMsg, 64)
 
 	go func() {
@@ -75,7 +80,7 @@ func startReading(cfg Config, cards []Card) <-chan streamMsg {
 		}
 		client := openai.NewClientWithConfig(clientCfg)
 
-		systemPrompt, userPrompt := buildPrompt(cfg, cards)
+		systemPrompt, userPrompt := buildPrompt(cfg, cards, question)
 
 		stream, err := client.CreateChatCompletionStream(
 			context.Background(),

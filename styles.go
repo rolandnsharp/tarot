@@ -75,6 +75,12 @@ var (
 			Italic(true).
 			Align(lipgloss.Center)
 
+	// Question hint (press enter to begin)
+	questionHintStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("141")).
+				Italic(true).
+				Align(lipgloss.Center)
+
 	// Spread positions
 	positions = []string{"PAST", "PRESENT", "FUTURE"}
 )

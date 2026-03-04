@@ -5,11 +5,13 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type tickMsg time.Time
 type connectMsg struct{}
+type waitAnimMsg time.Time
 
 type model struct {
 	cards    []Card
@@ -18,22 +20,37 @@ type model struct {
 	height   int
 	quitting bool
 
+	// Question input
+	question  string
+	textInput textinput.Model
+
 	// LLM reading
 	config      *Config
 	readingCh   <-chan streamMsg
 	readingText string
-	readingDone bool
-	readingErr  error
+	readingDone  bool
+	readingErr   error
+	waitFrame    int
+}
+
+func newTextInput() textinput.Model {
+	ti := textinput.New()
+	ti.Placeholder = "Ask the cards a question..."
+	ti.CharLimit = 200
+	ti.Width = 50
+	ti.Focus() // sets focus state; cmd discarded (cursor won't blink but input works)
+	return ti
 }
 
 func initialModel() model {
 	anim := NewAnimState()
-	anim.Start()
+	anim.Phase = PhaseQuestion
 	cfg, _ := LoadConfig()
 	return model{
-		cards:  DrawThree(),
-		anim:   anim,
-		config: cfg,
+		cards:     DrawThree(),
+		anim:      anim,
+		config:    cfg,
+		textInput: newTextInput(),
 	}
 }
 
@@ -43,13 +60,35 @@ func tickCmd() tea.Cmd {
 	})
 }
 
+func waitAnimCmd() tea.Cmd {
+	return tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+		return waitAnimMsg(t)
+	})
+}
+
 func (m model) Init() tea.Cmd {
-	return tea.Batch(tickCmd(), tea.WindowSize())
+	return tea.WindowSize()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// In question phase, route keys to text input
+		if m.anim.Phase == PhaseQuestion {
+			switch msg.String() {
+			case "ctrl+c", "esc":
+				m.quitting = true
+				return m, tea.Quit
+			case "enter":
+				m.question = m.textInput.Value()
+				m.anim.Start()
+				return m, tickCmd()
+			}
+			var cmd tea.Cmd
+			m.textInput, cmd = m.textInput.Update(msg)
+			return m, cmd
+		}
+
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
 			m.quitting = true
@@ -58,12 +97,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Reshuffle and reset reading
 			m.cards = DrawThree()
 			m.anim = NewAnimState()
-			m.anim.Start()
+			m.anim.Phase = PhaseQuestion
+			m.question = ""
+			m.textInput = newTextInput()
 			m.readingCh = nil
 			m.readingText = ""
 			m.readingDone = false
 			m.readingErr = nil
-			return m, tickCmd()
+			m.waitFrame = 0
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
@@ -92,8 +134,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tickCmd()
 
 	case connectMsg:
-		m.readingCh = startReading(*m.config, m.cards)
-		return m, waitForStream(m.readingCh)
+		m.readingCh = startReading(*m.config, m.cards, m.question)
+		return m, tea.Batch(waitForStream(m.readingCh), waitAnimCmd())
+
+	case waitAnimMsg:
+		m.waitFrame++
+		if m.readingText == "" && m.readingErr == nil {
+			return m, waitAnimCmd()
+		}
+		return m, nil
 
 	case readingChunkMsg:
 		m.readingText += msg.Text
@@ -128,6 +177,8 @@ func (m model) View() string {
 	switch m.anim.Phase {
 	case PhaseIdle:
 		s.WriteString(m.renderIdle())
+	case PhaseQuestion:
+		s.WriteString(m.renderQuestion())
 	case PhaseShuffle:
 		s.WriteString(m.renderShuffle())
 	default:
@@ -138,7 +189,7 @@ func (m model) View() string {
 
 	// Reading text
 	if m.anim.Phase == PhaseReading {
-		s.WriteString(m.renderReading())
+		s.WriteString("\n" + m.renderReading())
 	}
 
 	if m.anim.Phase == PhaseDisplay && m.config == nil {
@@ -152,6 +203,13 @@ func (m model) View() string {
 func (m model) renderIdle() string {
 	back := GetCardBack()
 	return lipgloss.Place(m.width, 24, lipgloss.Center, lipgloss.Center, back)
+}
+
+func (m model) renderQuestion() string {
+	input := m.textInput.View()
+	hint := questionHintStyle.Render("press enter to begin")
+	content := lipgloss.JoinVertical(lipgloss.Center, input, "", hint)
+	return lipgloss.Place(m.width, 6, lipgloss.Center, lipgloss.Center, content)
 }
 
 func (m model) renderShuffle() string {
@@ -258,7 +316,12 @@ func (m model) renderReading() string {
 
 	text := m.readingText
 	if text == "" {
-		return readingWaitStyle.Width(m.width).Render("✦ Consulting the oracle... ✦")
+		symbols := []string{"✦", "☽", "✧", "★", "✦", "☾", "✧", "★"}
+		left := symbols[m.waitFrame%len(symbols)]
+		right := symbols[(m.waitFrame+4)%len(symbols)]
+		dots := strings.Repeat(".", (m.waitFrame%3)+1)
+		msg := left + " Consulting the oracle" + dots + " " + right
+		return readingWaitStyle.Width(m.width).Render(msg)
 	}
 
 	// Word-wrap to a comfortable width
