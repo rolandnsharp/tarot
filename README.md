@@ -1,8 +1,4 @@
-```
-╔╦╗╔═╗╦═╗╔╦╗╦╔╗╔╔═╗╦    ╔╦╗╔═╗╦═╗╔═╗╔╦╗
- ║ ║╣ ╠╦╝║║║║║║║╠═╣║     ║ ╠═╣╠╦╝║ ║ ║
- ╩ ╚═╝╩╚═╩ ╩╩╝╚╝╩ ╩╩═╝  ╩ ╩ ╩╩╚═╚═╝ ╩
-```
+# Terminal Tarot
 
 A terminal tarot card reader with pixel art cards, shuffle animations, and AI-powered readings.
 
