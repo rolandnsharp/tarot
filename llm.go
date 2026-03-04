@@ -31,6 +31,9 @@ func buildPrompt(cfg Config, cards []Card, question string) (system, user string
 	}
 	sys.WriteString("You are giving a three-card tarot reading (Past, Present, Future spread). ")
 	sys.WriteString("Give a rich, intuitive reading that weaves the three cards into a cohesive narrative. ")
+	if question != "" {
+		sys.WriteString("The querent has asked a specific question — make sure your reading directly addresses it. ")
+	}
 	sys.WriteString("Keep the reading to about 3-4 paragraphs.")
 	if cfg.Querent != "" {
 		sys.WriteString("\n\nThe querent is: ")
@@ -52,12 +55,12 @@ func buildPrompt(cfg Config, cards []Card, question string) (system, user string
 		}
 		usr.WriteString(fmt.Sprintf("\n   Upright: %s\n   Reversed: %s\n\n", card.Upright, card.Reversed))
 	}
-	usr.WriteString("Please give the reading now.")
-
 	if question != "" {
-		usr.WriteString("\n\nThe querent's question is: ")
+		usr.WriteString("The querent's question is: ")
 		usr.WriteString(question)
+		usr.WriteString("\n\n")
 	}
+	usr.WriteString("Please give the reading now.")
 
 	return sys.String(), usr.String()
 }
