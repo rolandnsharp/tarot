@@ -60,8 +60,7 @@ func tickCmd() tea.Cmd {
 	})
 }
 
-const typewriterInterval = 50 * time.Millisecond
-const charsPerTick = 2 // ~40 chars/sec speaking pace
+const typewriterInterval = 150 * time.Millisecond // ~200 wpm speaking pace
 
 func typewriterCmd() tea.Cmd {
 	return tea.Tick(typewriterInterval, func(t time.Time) tea.Msg {
@@ -140,10 +139,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case typewriterMsg:
 		if m.revealIndex < len(m.readingBuffer) {
-			m.revealIndex += charsPerTick
-			if m.revealIndex > len(m.readingBuffer) {
-				m.revealIndex = len(m.readingBuffer)
+			// Skip any leading whitespace, then advance to end of next word
+			i := m.revealIndex
+			for i < len(m.readingBuffer) && m.readingBuffer[i] == ' ' {
+				i++
 			}
+			for i < len(m.readingBuffer) && m.readingBuffer[i] != ' ' {
+				i++
+			}
+			m.revealIndex = i
 			m.readingText = m.readingBuffer[:m.revealIndex]
 			return m, typewriterCmd()
 		}
@@ -202,6 +206,13 @@ func (m model) View() string {
 	if m.anim.Phase == PhaseDisplay && m.config == nil {
 		hint := configHintStyle.Width(m.width).Render("Add a tarot.md file to enable AI readings")
 		s.WriteString("\n" + hint)
+	}
+
+	// Show help hint when reading is fully revealed or cards displayed without config
+	if (m.anim.Phase == PhaseReading && m.readingDone && m.revealIndex >= len(m.readingBuffer)) ||
+		(m.anim.Phase == PhaseDisplay) {
+		help := helpStyle.Width(m.width).Render("r reshuffle · q quit")
+		s.WriteString("\n\n" + help)
 	}
 
 	return s.String()
@@ -319,8 +330,11 @@ func (m model) renderReading() string {
 	}
 
 	text := m.readingText
-	if text == "" {
+	if text == "" && m.readingBuffer == "" {
 		return readingWaitStyle.Width(m.width).Render("✦ Consulting the oracle... ✦")
+	}
+	if text == "" {
+		return ""
 	}
 
 	// Word-wrap to a comfortable width
