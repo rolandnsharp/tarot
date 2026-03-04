@@ -53,6 +53,9 @@ func initialModel() model {
 	anim := NewAnimState()
 	anim.Phase = PhaseQuestion
 	cfg, _ := LoadConfig()
+	if cfg != nil && cfg.Deck != "" {
+		ActiveDeck = cfg.Deck
+	}
 	mp := &MusicPlayer{}
 	mp.Play()
 	return model{

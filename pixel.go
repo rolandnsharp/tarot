@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -103,6 +105,93 @@ func RenderPixelArt(art string) string {
 	return sb.String()
 }
 
+// RenderRGBCard takes a 40×24 RGB pixel grid and renders it as half-block terminal art.
+// Each pair of rows becomes one terminal row: top pixel = foreground ▀, bottom pixel = background.
+func RenderRGBCard(pixels [40][24][3]uint8) string {
+	var sb strings.Builder
+	for row := 0; row < 40; row += 2 {
+		for col := 0; col < 24; col++ {
+			tr, tg, tb := pixels[row][col][0], pixels[row][col][1], pixels[row][col][2]
+			br, bg, bb := pixels[row+1][col][0], pixels[row+1][col][1], pixels[row+1][col][2]
+			sb.WriteString(fgColor(tr, tg, tb))
+			sb.WriteString(bgColor(br, bg, bb))
+			sb.WriteString("▀")
+			sb.WriteString(resetCode)
+		}
+		if row+2 < 40 {
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
+}
+
+// BuildRGBCardFrame wraps a 24×40 RGB pixel grid in a 28×44 frame with a 2px rounded border.
+func BuildRGBCardFrame(inner [40][24][3]uint8, borderColor [3]uint8) [44][28][3]uint8 {
+	var frame [44][28][3]uint8
+	bc := borderColor
+
+	// Fill entire frame with border color first
+	for y := 0; y < 44; y++ {
+		for x := 0; x < 28; x++ {
+			frame[y][x] = bc
+		}
+	}
+
+	// Clear corners for rounded effect (row 0 and row 43)
+	frame[0][0] = [3]uint8{0, 0, 0}
+	frame[0][1] = [3]uint8{0, 0, 0}
+	frame[0][26] = [3]uint8{0, 0, 0}
+	frame[0][27] = [3]uint8{0, 0, 0}
+	frame[43][0] = [3]uint8{0, 0, 0}
+	frame[43][1] = [3]uint8{0, 0, 0}
+	frame[43][26] = [3]uint8{0, 0, 0}
+	frame[43][27] = [3]uint8{0, 0, 0}
+
+	// Place inner art at offset (2,2) with 1px padding
+	for y := 0; y < 40; y++ {
+		for x := 0; x < 24; x++ {
+			frame[y+2][x+2] = inner[y][x]
+		}
+	}
+
+	return frame
+}
+
+// RenderRGBFrame renders a 44×28 framed RGB grid as half-block terminal art.
+// Pixels with RGB (0,0,0) are treated as transparent (terminal default).
+func RenderRGBFrame(frame [44][28][3]uint8) string {
+	var sb strings.Builder
+	for row := 0; row < 44; row += 2 {
+		for col := 0; col < 28; col++ {
+			top := frame[row][col]
+			bot := frame[row+1][col]
+			topTransparent := top[0] == 0 && top[1] == 0 && top[2] == 0
+			botTransparent := bot[0] == 0 && bot[1] == 0 && bot[2] == 0
+
+			if topTransparent && botTransparent {
+				sb.WriteString(" ")
+			} else if topTransparent {
+				sb.WriteString(fgColor(bot[0], bot[1], bot[2]))
+				sb.WriteString("▄")
+				sb.WriteString(resetCode)
+			} else if botTransparent {
+				sb.WriteString(fgColor(top[0], top[1], top[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			} else {
+				sb.WriteString(fgColor(top[0], top[1], top[2]))
+				sb.WriteString(bgColor(bot[0], bot[1], bot[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			}
+		}
+		if row+2 < 44 {
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
+}
+
 // ParsePixelGrid converts a newline-separated palette string into a 2D byte grid.
 func ParsePixelGrid(art string) [][]byte {
 	lines := strings.Split(art, "\n")
@@ -168,6 +257,69 @@ func RenderPixelBuffer(buf [][]byte) string {
 		}
 	}
 	return sb.String()
+}
+
+// LoadHexCard reads a .hex file and returns a 40×24 RGB pixel grid.
+// Format: 40 lines, each with 24 comma-separated 6-char hex RGB values.
+func LoadHexCard(path string) ([40][24][3]uint8, error) {
+	var pixels [40][24][3]uint8
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return pixels, err
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) < 40 {
+		return pixels, fmt.Errorf("hex file has %d rows, need 40", len(lines))
+	}
+	for y := 0; y < 40; y++ {
+		cols := strings.Split(strings.TrimSpace(lines[y]), ",")
+		if len(cols) < 24 {
+			return pixels, fmt.Errorf("row %d has %d pixels, need 24", y, len(cols))
+		}
+		for x := 0; x < 24; x++ {
+			h := strings.TrimSpace(cols[x])
+			if len(h) != 6 {
+				return pixels, fmt.Errorf("row %d col %d: invalid hex %q", y, x, h)
+			}
+			b, err := hex.DecodeString(h)
+			if err != nil {
+				return pixels, fmt.Errorf("row %d col %d: %w", y, x, err)
+			}
+			pixels[y][x] = [3]uint8{b[0], b[1], b[2]}
+		}
+	}
+	return pixels, nil
+}
+
+// LoadHexFrame reads a .hex file with a 44×28 framed card (border included).
+func LoadHexFrame(path string) ([44][28][3]uint8, error) {
+	var frame [44][28][3]uint8
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return frame, err
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) < 44 {
+		return frame, fmt.Errorf("hex frame file has %d rows, need 44", len(lines))
+	}
+	for y := 0; y < 44; y++ {
+		cols := strings.Split(strings.TrimSpace(lines[y]), ",")
+		if len(cols) < 28 {
+			return frame, fmt.Errorf("row %d has %d pixels, need 28", y, len(cols))
+		}
+		for x := 0; x < 28; x++ {
+			h := strings.TrimSpace(cols[x])
+			if len(h) != 6 {
+				return frame, fmt.Errorf("row %d col %d: invalid hex %q", y, x, h)
+			}
+			b, err := hex.DecodeString(h)
+			if err != nil {
+				return frame, fmt.Errorf("row %d col %d: %w", y, x, err)
+			}
+			frame[y][x] = [3]uint8{b[0], b[1], b[2]}
+		}
+	}
+	return frame, nil
 }
 
 // BuildCardFrame wraps 24×40 inner art in a 28×44 frame with a 2px rounded-pixel border.

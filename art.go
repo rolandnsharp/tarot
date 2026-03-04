@@ -1,8 +1,85 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
+
+// ActiveDeck holds the currently selected deck name (empty = built-in classic).
+var ActiveDeck string
+
+// deckDir returns the base directory for a named deck.
+func deckDir() string {
+	if ActiveDeck == "" {
+		return ""
+	}
+	// Look for decks/ relative to the executable, then current directory
+	exe, _ := os.Executable()
+	exeDir := filepath.Dir(exe)
+	candidates := []string{
+		filepath.Join(exeDir, "decks", ActiveDeck),
+		filepath.Join("decks", ActiveDeck),
+	}
+	for _, d := range candidates {
+		if info, err := os.Stat(d); err == nil && info.IsDir() {
+			return d
+		}
+	}
+	return filepath.Join("decks", ActiveDeck) // fallback
+}
+
+// cardHexPath returns the .hex file path for a card in the active deck.
+func cardHexPath(c Card) string {
+	dir := deckDir()
+	if dir == "" {
+		return ""
+	}
+	if c.IsMajor() {
+		return filepath.Join(dir, "major", fmt.Sprintf("%02d-%s.hex", c.Number, slugify(c.Name)))
+	}
+	return filepath.Join(dir, "minor", fmt.Sprintf("%s-%02d.hex", strings.ToLower(c.SuitName()), c.Number))
+}
+
+// slugify converts a card name to a filename-safe slug.
+func slugify(name string) string {
+	name = strings.ToLower(name)
+	name = strings.ReplaceAll(name, " ", "-")
+	// Remove non-alphanumeric except hyphens
+	var b strings.Builder
+	for _, c := range name {
+		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' {
+			b.WriteRune(c)
+		}
+	}
+	return b.String()
+}
+
+// ListDecks returns names of available decks in the decks/ directory.
+func ListDecks() []string {
+	var decks []string
+	exe, _ := os.Executable()
+	exeDir := filepath.Dir(exe)
+	searchDirs := []string{
+		filepath.Join(exeDir, "decks"),
+		"decks",
+	}
+	seen := make(map[string]bool)
+	for _, base := range searchDirs {
+		entries, err := os.ReadDir(base)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() && !seen[e.Name()] {
+				seen[e.Name()] = true
+				decks = append(decks, e.Name())
+			}
+		}
+	}
+	return decks
+}
 
 // Card back: 28×44 pixel art (Brogue-inspired deep purple with diamond accents)
 var cardBackPixels = strings.Join([]string{
@@ -196,6 +273,17 @@ func GeneratePipCard(number int, suit Suit) string {
 
 // GetCardArt returns the fully rendered pixel art string for a card face.
 func GetCardArt(c Card) string {
+	// Try loading from active deck first
+	if ActiveDeck != "" {
+		if path := cardHexPath(c); path != "" {
+			if pixels, err := LoadHexCard(path); err == nil {
+				frame := BuildRGBCardFrame(pixels, [3]uint8{139, 47, 201})
+				return RenderRGBFrame(frame)
+			}
+		}
+	}
+
+	// Fall back to built-in pixel art
 	var inner string
 	if c.IsMajor() {
 		inner = GetMajorArt(c.Number)
@@ -210,5 +298,16 @@ func GetCardArt(c Card) string {
 
 // GetCardBack returns the fully rendered pixel art string for the card back.
 func GetCardBack() string {
+	// Try loading from active deck first
+	if ActiveDeck != "" {
+		dir := deckDir()
+		if dir != "" {
+			path := filepath.Join(dir, "back.hex")
+			if pixels, err := LoadHexCard(path); err == nil {
+				frame := BuildRGBCardFrame(pixels, [3]uint8{139, 47, 201})
+				return RenderRGBFrame(frame)
+			}
+		}
+	}
 	return RenderPixelArt(cardBackPixels)
 }

@@ -12,6 +12,7 @@ type Config struct {
 	Model       string
 	BaseURL     string
 	APIKey      string
+	Deck        string // deck name (e.g. "cyberpunk"); empty = built-in classic
 }
 
 // LoadConfig reads ./tarot.md and parses it into a Config.
@@ -44,6 +45,8 @@ func LoadConfig() (*Config, error) {
 			cfg.Interpreter = body
 		case "Querent":
 			cfg.Querent = body
+		case "Deck":
+			cfg.Deck = body
 		case "Connection":
 			for _, line := range strings.Split(body, "\n") {
 				key, val, ok := strings.Cut(line, ":")
