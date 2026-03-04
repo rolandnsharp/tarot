@@ -2,7 +2,7 @@
 
 A terminal tarot card reader with pixel art cards, shuffle animations, and AI-powered readings.
 
-![demo](demo.gif)
+![demo](https://raw.githubusercontent.com/rolandnsharp/tarot/main/demo.gif)
 
 ## Usage
 
