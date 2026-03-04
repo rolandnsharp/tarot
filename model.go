@@ -96,6 +96,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.question = m.textInput.Value()
 				m.readingEpoch++
 				m.anim.Start()
+				PlaySFX("sliding-paper.wav")
 				cmds := []tea.Cmd{tickCmd()}
 				if m.config != nil {
 					m.readingCh = startReading(*m.config, m.cards, m.question)

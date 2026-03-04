@@ -50,6 +50,7 @@ sudo apt install alsa-utils  # Debian/Ubuntu
 ## Sound Effects
 
 - [Card Flip](https://freesound.org/s/240776/) by f4ngy — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- [Sliding Paper on Table](https://freesound.org/s/46631/) by 123jorre456 — CC0
 
 ## Controls
 
