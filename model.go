@@ -122,9 +122,7 @@ func (m model) renderIdle() string {
 
 func (m model) renderShuffle() string {
 	if len(m.anim.WashCards) == 0 || m.width == 0 || m.height == 0 {
-		// Waiting for screen size or init
-		shuffleText := subtitleStyle.Width(m.width).Render("✦ Shuffling... ✦")
-		return "\n" + shuffleText
+		return "\n"
 	}
 
 	bufW := m.width

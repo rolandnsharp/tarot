@@ -21,10 +21,10 @@ const (
 const (
 	washBounceTime   = 2500 * time.Millisecond // free bounce phase
 	washConvergeTime = 800 * time.Millisecond  // converge to center
-	washSettleTime   = 400 * time.Millisecond  // rest at center
-	shuffleDuration  = washBounceTime + washConvergeTime + washSettleTime
-	washCardCount    = 20
-	washCardW        = 28
+	washSettleTime   = 400 * time.Millisecond  // rest at center (visible deck)
+	washPauseTime    = 1000 * time.Millisecond // cards picked up, empty screen
+	shuffleDuration  = washBounceTime + washConvergeTime + washSettleTime + washPauseTime
+	washCardW = 28
 	washCardH        = 44
 	dealInterval     = 400 * time.Millisecond
 	revealInterval   = 500 * time.Millisecond
@@ -83,7 +83,7 @@ func (a *AnimState) initWashCards() {
 	bufH := (a.ScreenH - 5) * 2
 	cx := float64(a.ScreenW-washCardW) / 2
 	cy := float64(bufH-washCardH) / 2
-	a.WashCards = make([]WashCard, washCardCount)
+	a.WashCards = make([]WashCard, len(Deck))
 	for i := range a.WashCards {
 		angle := rand.Float64() * 2 * math.Pi
 		speed := 5.0 + rand.Float64()*5.0
@@ -105,7 +105,7 @@ func (a *AnimState) Tick() {
 		if a.ScreenW < washCardW || a.ScreenH < 10 {
 			break // wait for valid screen size
 		}
-		if len(a.WashCards) == 0 {
+		if a.WashCards == nil {
 			a.initWashCards()
 		}
 
@@ -115,8 +115,13 @@ func (a *AnimState) Tick() {
 		cx := maxX / 2
 		cy := maxY / 2
 
-		settling := elapsed > washBounceTime+washConvergeTime
-		converging := !settling && elapsed > washBounceTime
+		pausing := elapsed > washBounceTime+washConvergeTime+washSettleTime
+		settling := !pausing && elapsed > washBounceTime+washConvergeTime
+		converging := !settling && !pausing && elapsed > washBounceTime
+
+		if pausing {
+			a.WashCards = a.WashCards[:0] // cards picked up, nothing to render
+		}
 
 		for i := range a.WashCards {
 			c := &a.WashCards[i]
