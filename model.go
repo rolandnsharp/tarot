@@ -56,6 +56,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.anim.ScreenW = msg.Width
+		m.anim.ScreenH = msg.Height
 		return m, nil
 
 	case tickMsg:
@@ -119,30 +121,55 @@ func (m model) renderIdle() string {
 }
 
 func (m model) renderShuffle() string {
-	frame := m.anim.ShuffleFrame()
-
-	// Create 3 card backs with offset jitter to simulate shuffling
-	offsets := [4][3]int{
-		{0, 0, 0},
-		{2, -1, 1},
-		{-1, 2, -2},
-		{1, -2, 1},
+	if len(m.anim.WashCards) == 0 || m.width == 0 || m.height == 0 {
+		// Waiting for screen size or init
+		shuffleText := subtitleStyle.Width(m.width).Render("✦ Shuffling... ✦")
+		return "\n" + shuffleText
 	}
 
-	var cards [3]string
-	for i := 0; i < 3; i++ {
-		off := offsets[frame][i]
-		padding := strings.Repeat(" ", max(0, off))
-		back := GetCardBack()
-		cards[i] = padding + back
+	bufW := m.width
+	bufH := (m.height - 5) * 2 // pixel rows (leave room for title/help)
+	if bufH < washCardH {
+		bufH = washCardH + 4
 	}
 
-	// Stack them with slight overlap
-	stacked := lipgloss.JoinHorizontal(lipgloss.Top, cards[0], " ", cards[1], " ", cards[2])
+	// Create pixel buffer filled with transparent
+	buf := make([][]byte, bufH)
+	for r := range buf {
+		row := make([]byte, bufW)
+		for c := range row {
+			row[c] = '.'
+		}
+		buf[r] = row
+	}
+
+	// Composite each wash card onto the buffer
+	grid := m.anim.WashGrid
+	for _, wc := range m.anim.WashCards {
+		sx := int(wc.X)
+		sy := int(wc.Y)
+		for py, gridRow := range grid {
+			dy := sy + py
+			if dy < 0 || dy >= bufH {
+				continue
+			}
+			for px, ch := range gridRow {
+				dx := sx + px
+				if dx < 0 || dx >= bufW {
+					continue
+				}
+				if ch != '.' {
+					buf[dy][dx] = ch
+				}
+			}
+		}
+	}
+
+	rendered := RenderPixelBuffer(buf)
 
 	shuffleText := subtitleStyle.Width(m.width).Render("✦ Shuffling... ✦")
 
-	return lipgloss.Place(m.width, 24, lipgloss.Center, lipgloss.Center, stacked) + "\n" + shuffleText
+	return rendered + "\n" + shuffleText
 }
 
 func (m model) renderCards() string {

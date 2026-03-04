@@ -103,6 +103,73 @@ func RenderPixelArt(art string) string {
 	return sb.String()
 }
 
+// ParsePixelGrid converts a newline-separated palette string into a 2D byte grid.
+func ParsePixelGrid(art string) [][]byte {
+	lines := strings.Split(art, "\n")
+	grid := make([][]byte, len(lines))
+	for i, line := range lines {
+		grid[i] = []byte(line)
+	}
+	return grid
+}
+
+// RenderPixelBuffer renders a 2D byte grid (pixel buffer) as half-block art.
+func RenderPixelBuffer(buf [][]byte) string {
+	// Pad to even number of rows
+	rows := len(buf)
+	if rows%2 != 0 {
+		buf = append(buf, make([]byte, 0))
+		rows++
+	}
+
+	var sb strings.Builder
+	for row := 0; row < rows; row += 2 {
+		top := buf[row]
+		bot := buf[row+1]
+
+		maxLen := len(top)
+		if len(bot) > maxLen {
+			maxLen = len(bot)
+		}
+
+		for col := 0; col < maxLen; col++ {
+			var tc, bc byte = '.', '.'
+			if col < len(top) {
+				tc = top[col]
+			}
+			if col < len(bot) {
+				bc = bot[col]
+			}
+
+			topRGB, topOK := Palette[tc]
+			botRGB, botOK := Palette[bc]
+
+			if tc == '.' && bc == '.' {
+				sb.WriteString(" ")
+			} else if tc == '.' {
+				sb.WriteString(fgColor(botRGB[0], botRGB[1], botRGB[2]))
+				sb.WriteString("▄")
+				sb.WriteString(resetCode)
+			} else if bc == '.' {
+				sb.WriteString(fgColor(topRGB[0], topRGB[1], topRGB[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			} else if topOK && botOK {
+				sb.WriteString(fgColor(topRGB[0], topRGB[1], topRGB[2]))
+				sb.WriteString(bgColor(botRGB[0], botRGB[1], botRGB[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			} else {
+				sb.WriteString(" ")
+			}
+		}
+		if row+2 < rows {
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
+}
+
 // BuildCardFrame wraps 24×40 inner art in a 28×44 frame with a 2px rounded-pixel border.
 func BuildCardFrame(inner string, borderColor, bgColor byte) string {
 	innerLines := strings.Split(inner, "\n")
