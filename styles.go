@@ -43,7 +43,36 @@ var (
 
 	// Help text
 	helpStyle = lipgloss.NewStyle().
-			Foreground(colorDimPurple).
+			Foreground(lipgloss.Color("141")).
+			Align(lipgloss.Center)
+
+	// Reading text
+	readingStyle = lipgloss.NewStyle().
+			Foreground(colorCream).
+			PaddingLeft(2).
+			PaddingRight(2)
+
+	// Streaming cursor
+	readingCursorStyle = lipgloss.NewStyle().
+				Foreground(colorGold).
+				Bold(true)
+
+	// Waiting message
+	readingWaitStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("223")).
+				Italic(true).
+				Align(lipgloss.Center)
+
+	// Error message
+	readingErrStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("168")).
+			Italic(true).
+			Align(lipgloss.Center)
+
+	// Config hint (shown when no tarot.md)
+	configHintStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("223")).
+			Italic(true).
 			Align(lipgloss.Center)
 
 	// Spread positions
