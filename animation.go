@@ -111,11 +111,10 @@ func (a *AnimState) Tick() {
 			a.WashCards = a.WashCards[:0] // cards picked up, nothing to render
 		}
 
-		// Re-randomize a few Z values every ~15 frames for dynamic layering
+		// Re-randomize all Z values every ~15 frames for dynamic layering
 		if !converging && !settling && !pausing && a.Frame%15 == 0 {
-			for k := 0; k < 10 && k < len(a.WashCards); k++ {
-				idx := rand.Intn(len(a.WashCards))
-				a.WashCards[idx].Z = rand.Intn(1000)
+			for k := range a.WashCards {
+				a.WashCards[k].Z = rand.Intn(1000)
 			}
 		}
 
