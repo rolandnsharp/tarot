@@ -21,7 +21,7 @@ type model struct {
 	// LLM reading
 	config      *Config
 	readingCh   <-chan streamMsg
-	readingText strings.Builder
+	readingText string
 	readingDone bool
 	readingErr  error
 }
@@ -60,7 +60,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.anim = NewAnimState()
 			m.anim.Start()
 			m.readingCh = nil
-			m.readingText.Reset()
+			m.readingText = ""
 			m.readingDone = false
 			m.readingErr = nil
 			return m, tickCmd()
@@ -96,7 +96,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, waitForStream(m.readingCh)
 
 	case readingChunkMsg:
-		m.readingText.WriteString(msg.Text)
+		m.readingText += msg.Text
 		return m, waitForStream(m.readingCh)
 
 	case readingDoneMsg:
@@ -256,7 +256,7 @@ func (m model) renderReading() string {
 		return wait + "\n" + errMsg
 	}
 
-	text := m.readingText.String()
+	text := m.readingText
 	if text == "" {
 		return readingWaitStyle.Width(m.width).Render("✦ Consulting the oracle... ✦")
 	}

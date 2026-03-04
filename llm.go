@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -66,7 +67,12 @@ func startReading(cfg Config, cards []Card) <-chan streamMsg {
 		if cfg.BaseURL != "" {
 			clientCfg.BaseURL = cfg.BaseURL
 		}
-		clientCfg.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+		clientCfg.HTTPClient = &http.Client{
+			Transport: &http.Transport{
+				DialContext:         (&net.Dialer{Timeout: 5 * time.Second}).DialContext,
+				TLSHandshakeTimeout: 5 * time.Second,
+			},
+		}
 		client := openai.NewClientWithConfig(clientCfg)
 
 		systemPrompt, userPrompt := buildPrompt(cfg, cards)
