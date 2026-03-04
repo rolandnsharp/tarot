@@ -204,7 +204,7 @@ func GetCardArt(c Card) string {
 	} else {
 		inner = GeneratePipCard(c.Number, c.Suit)
 	}
-	framed := BuildCardFrame(inner, '5', '2') // gold border, cream bg
+	framed := BuildCardFrame(inner, '7', '2') // purple border, cream bg
 	return RenderPixelArt(framed)
 }
 

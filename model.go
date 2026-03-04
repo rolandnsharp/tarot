@@ -297,7 +297,7 @@ func (m model) renderCards() string {
 		if m.anim.CardRevealed(i) {
 			// Show card face
 			cardViews[i] = GetCardArt(m.cards[i])
-			nameViews[i] = cardNameStyle.Width(cardW).Render(m.cards[i].Name)
+			nameViews[i] = cardNameStyle.Width(cardW).Render("— " + m.cards[i].Name + " —")
 			posViews[i] = positionStyle.Width(cardW).Render("— " + positions[i] + " —")
 		} else {
 			// Show card back
@@ -349,7 +349,7 @@ func (m model) renderReading() string {
 
 	// Add cursor if still revealing
 	if m.revealIndex < len(m.readingBuffer) || !m.readingDone {
-		wrapped += readingCursorStyle.Render("_")
+		wrapped += readingCursorStyle.Render("█")
 	}
 
 	rendered := readingStyle.Render(wrapped)

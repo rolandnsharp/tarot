@@ -8,12 +8,13 @@ var (
 	// Balatro-inspired color palette
 	colorGold      = lipgloss.Color("#ffd700")
 	colorCream     = lipgloss.Color("#f5e6d3")
+	colorLavender  = lipgloss.Color("#e0d0f0")
 	colorMagenta   = lipgloss.Color("#8b2fc9")
 	colorDimPurple = lipgloss.Color("#2d1150")
 
 	// Card name
 	cardNameStyle = lipgloss.NewStyle().
-			Foreground(colorGold).
+			Foreground(colorMagenta).
 			Bold(true).
 			Align(lipgloss.Center)
 
@@ -48,13 +49,13 @@ var (
 
 	// Reading text
 	readingStyle = lipgloss.NewStyle().
-			Foreground(colorCream).
+			Foreground(colorLavender).
 			PaddingLeft(2).
 			PaddingRight(2)
 
 	// Streaming cursor
 	readingCursorStyle = lipgloss.NewStyle().
-				Foreground(colorGold).
+				Foreground(colorLavender).
 				Bold(true)
 
 	// Waiting message
