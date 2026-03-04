@@ -234,8 +234,9 @@ func (m model) renderIdle() string {
 
 func (m model) renderQuestion() string {
 	input := m.textInput.View()
-	content := lipgloss.JoinVertical(lipgloss.Center, input)
-	return lipgloss.Place(m.width, 6, lipgloss.Center, lipgloss.Center, content)
+	// Fixed-width box prevents centering shift when placeholder disappears
+	box := lipgloss.NewStyle().Width(m.textInput.Width + lipgloss.Width(m.textInput.Prompt)).Render(input)
+	return lipgloss.Place(m.width, 6, lipgloss.Center, lipgloss.Center, box)
 }
 
 func (m model) renderShuffle() string {
