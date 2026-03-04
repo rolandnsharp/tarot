@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"math/rand"
+	"path/filepath"
 	"time"
 )
 
@@ -45,18 +46,31 @@ type AnimState struct {
 	CardsShown int // 0-3: how many cards have been revealed
 
 	// Wash shuffle
-	WashCards []WashCard
-	WashGrid  [][]byte // parsed card back pixel grid
-	ScreenW   int      // terminal columns (= pixel width)
-	ScreenH   int      // terminal rows
+	WashCards   []WashCard
+	WashGrid    [][]byte    // parsed card back pixel grid (palette mode)
+	WashRGB     [44][28][3]uint8 // card back pixel grid (RGB mode)
+	WashIsRGB   bool        // true when using RGB wash grid
+	ScreenW     int         // terminal columns (= pixel width)
+	ScreenH     int         // terminal rows
 }
 
 func NewAnimState() AnimState {
-	return AnimState{
+	as := AnimState{
 		Phase:     PhaseIdle,
 		StartTime: time.Now(),
 		WashGrid:  ParsePixelGrid(cardBackPixels),
 	}
+	// Try loading RGB card back from active deck
+	if ActiveDeck != "" {
+		dir := deckDir()
+		if dir != "" {
+			if pixels, err := LoadHexCard(filepath.Join(dir, "back.hex")); err == nil {
+				as.WashRGB = BuildRGBCardFrame(pixels, [3]uint8{139, 47, 201})
+				as.WashIsRGB = true
+			}
+		}
+	}
+	return as
 }
 
 func (a *AnimState) Start() {

@@ -259,6 +259,60 @@ func RenderPixelBuffer(buf [][]byte) string {
 	return sb.String()
 }
 
+// RenderRGBPixelBuffer renders a screen-sized RGB pixel buffer as half-block art.
+// Pixels with RGB (0,0,0) are treated as transparent.
+func RenderRGBPixelBuffer(buf [][][3]uint8) string {
+	rows := len(buf)
+	if rows%2 != 0 {
+		buf = append(buf, make([][3]uint8, 0))
+		rows++
+	}
+
+	var sb strings.Builder
+	for row := 0; row < rows; row += 2 {
+		topRow := buf[row]
+		botRow := buf[row+1]
+
+		maxLen := len(topRow)
+		if len(botRow) > maxLen {
+			maxLen = len(botRow)
+		}
+
+		for col := 0; col < maxLen; col++ {
+			var top, bot [3]uint8
+			if col < len(topRow) {
+				top = topRow[col]
+			}
+			if col < len(botRow) {
+				bot = botRow[col]
+			}
+			topT := top[0] == 0 && top[1] == 0 && top[2] == 0
+			botT := bot[0] == 0 && bot[1] == 0 && bot[2] == 0
+
+			if topT && botT {
+				sb.WriteString(" ")
+			} else if topT {
+				sb.WriteString(fgColor(bot[0], bot[1], bot[2]))
+				sb.WriteString("▄")
+				sb.WriteString(resetCode)
+			} else if botT {
+				sb.WriteString(fgColor(top[0], top[1], top[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			} else {
+				sb.WriteString(fgColor(top[0], top[1], top[2]))
+				sb.WriteString(bgColor(bot[0], bot[1], bot[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			}
+		}
+		if row+2 < rows {
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
+}
+
 // LoadHexCard reads a .hex file and returns a 40×24 RGB pixel grid.
 // Format: 40 lines, each with 24 comma-separated 6-char hex RGB values.
 func LoadHexCard(path string) ([40][24][3]uint8, error) {

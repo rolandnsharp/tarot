@@ -50,12 +50,12 @@ func newTextInput() textinput.Model {
 }
 
 func initialModel() model {
-	anim := NewAnimState()
-	anim.Phase = PhaseQuestion
 	cfg, _ := LoadConfig()
 	if cfg != nil && cfg.Deck != "" {
 		ActiveDeck = cfg.Deck
 	}
+	anim := NewAnimState()
+	anim.Phase = PhaseQuestion
 	mp := &MusicPlayer{}
 	mp.Play()
 	return model{
@@ -273,7 +273,49 @@ func (m model) renderShuffle() string {
 		bufH = washCardH + 4
 	}
 
-	// Create pixel buffer filled with transparent
+	// Sort by Z so cards with lower Z draw first (behind)
+	sort.Slice(m.anim.WashCards, func(i, j int) bool {
+		return m.anim.WashCards[i].Z < m.anim.WashCards[j].Z
+	})
+
+	if m.anim.WashIsRGB {
+		return m.renderShuffleRGB(bufW, bufH)
+	}
+	return m.renderShufflePalette(bufW, bufH)
+}
+
+func (m model) renderShuffleRGB(bufW, bufH int) string {
+	buf := make([][][3]uint8, bufH)
+	for r := range buf {
+		buf[r] = make([][3]uint8, bufW) // zero-value = (0,0,0) = transparent
+	}
+
+	grid := m.anim.WashRGB
+	for _, wc := range m.anim.WashCards {
+		sx := int(wc.X)
+		sy := int(wc.Y)
+		for py := 0; py < 44; py++ {
+			dy := sy + py
+			if dy < 0 || dy >= bufH {
+				continue
+			}
+			for px := 0; px < 28; px++ {
+				dx := sx + px
+				if dx < 0 || dx >= bufW {
+					continue
+				}
+				p := grid[py][px]
+				if p[0] != 0 || p[1] != 0 || p[2] != 0 {
+					buf[dy][dx] = p
+				}
+			}
+		}
+	}
+
+	return RenderRGBPixelBuffer(buf)
+}
+
+func (m model) renderShufflePalette(bufW, bufH int) string {
 	buf := make([][]byte, bufH)
 	for r := range buf {
 		row := make([]byte, bufW)
@@ -283,12 +325,6 @@ func (m model) renderShuffle() string {
 		buf[r] = row
 	}
 
-	// Sort by Z so cards with lower Z draw first (behind)
-	sort.Slice(m.anim.WashCards, func(i, j int) bool {
-		return m.anim.WashCards[i].Z < m.anim.WashCards[j].Z
-	})
-
-	// Composite each wash card onto the buffer
 	grid := m.anim.WashGrid
 	for _, wc := range m.anim.WashCards {
 		sx := int(wc.X)
@@ -310,9 +346,7 @@ func (m model) renderShuffle() string {
 		}
 	}
 
-	rendered := RenderPixelBuffer(buf)
-
-	return rendered
+	return RenderPixelBuffer(buf)
 }
 
 func (m model) renderCards() string {
