@@ -4,52 +4,52 @@ import (
 	"strings"
 )
 
-// Card back: 28×44 pixel art (purple/gold pattern with "TAROT" center)
+// Card back: 28×44 pixel art (Brogue-inspired deep purple with diamond accents)
 var cardBackPixels = strings.Join([]string{
-	"..bbbbbbbbbbbbbbbbbbbbbbbb..",
-	"b7b7b7b7b7b7b7b7b7b7b7b7b7b7",
-	"7b5b5b5b5b5b5b5b5b5b5b5b5b7b",
-	"b75a5a5a5a5a5a5a5a5a5a5a5ab7",
-	"7b5a7b7b7b7b7b7b7b7b7b7b5a7b",
-	"b75a7b5a5a5a5a5a5a5a5a7b5ab7",
-	"b75a7b55555555555555557b5ab7",
-	"7b5a7b5aaaaaaaaaaaaaa57b5a7b",
-	"b75a7b55555555555555557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55555555555555557b5a7b",
-	"b75a7b55555555555555557b5ab7",
-	"7b5a7b55a55a5555555a557b5a7b",
-	"b75a7b55aa5555555a5a557b5ab7",
-	"7b5a7b55aa5555555a5a557b5a7b",
-	"b75a7b55aa5555555a5a557b5ab7",
-	"7b5a7b55aa5555555a5a557b5a7b",
-	"b75a7b55555555555555557b5ab7",
-	"7b5a7b55555555555555557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55bbbbbbbbbbbb557b5a7b",
-	"b75a7b55777777777777557b5ab7",
-	"7b5a7b55555555555555557b5a7b",
-	"b75a7b5aaaaaaaaaaaaaa57b5ab7",
-	"7b5a7b55555555555555557b5a7b",
-	"b75a7b5a5a5a5a5a5a5a5a7b5ab7",
-	"7b5a7b7b7b7b7b7b7b7b7b7b5a7b",
-	"b75a5a5a5a5a5a5a5a5a5a5a5ab7",
-	"7b5b5b5b5b5b5b5b5b5b5b5b5b7b",
-	"7b7b7b7b7b7b7b7b7b7b7b7b7b7b",
-	"..777777777777777777777777..",
+	"..777777777777777777777777..", // 28
+	"7777777777777777777777777777", // 28
+	"77b7b7b7b7b7b7b7b7b7b7b7b777", // 28
+	"777b7b7b7b7b7b7b7b7b7b7b7b77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77bbbbbbb7bbbbbbbb7bbbbbbb77", // 28
+	"77bbbbbb7b7bbbbbb7b7bbbbbb77", // 28
+	"77bbbbb7b7b7bbbb7b7b7bbbbb77", // 28
+	"77bbbb7b7b7b7bb7b7b7b7bbbb77", // 28
+	"77bbbbb7b7b7b77b7b7b7bbbbb77", // 28
+	"77bbbbbb7b7b7bb7b7b7bbbbbb77", // 28
+	"77bbbbbbb7b7bbbb7b7bbbbbbb77", // 28
+	"77bbbbbbbb7bbbbbb7bbbbbbbb77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77b7bb7bb7bb7bb7bb7bb7bb7b77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77bbbbbbbbbbbb77bbbbbbbbbb77", // 28
+	"77bbbbbbbbbbb7bb7bbbbbbbbb77", // 28
+	"77bbbbbbbbbb7bbbb7bbbbbbbb77", // 28
+	"77bbbbbbbbb7bbbbbb7bbbbbbb77", // 28
+	"77bbbbbbbb7bbbbbbbb7bbbbbb77", // 28
+	"77bbbbbbbbb7bbbbbb7bbbbbbb77", // 28
+	"77bbbbbbbbbb7bbbb7bbbbbbbb77", // 28
+	"77bbbbbbbbbbb7bb7bbbbbbbbb77", // 28
+	"77bbbbbbbbbbbb77bbbbbbbbbb77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77b7bb7bb7bb7bb7bb7bb7bb7b77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77bbbbbbbb7bbbbbb7bbbbbbbb77", // 28
+	"77bbbbbbb7b7bbbb7b7bbbbbbb77", // 28
+	"77bbbbbb7b7b7bb7b7b7bbbbbb77", // 28
+	"77bbbbb7b7b7b77b7b7b7bbbbb77", // 28
+	"77bbbb7b7b7b7bb7b7b7b7bbbb77", // 28
+	"77bbbbb7b7b7bbbb7b7b7bbbbb77", // 28
+	"77bbbbbb7b7bbbbbb7b7bbbbbb77", // 28
+	"77bbbbbbb7bbbbbbbb7bbbbbbb77", // 28
+	"77bbbbbbbbbbbbbbbbbbbbbbbb77", // 28
+	"77b7b7b7b7b7b7b7b7b7b7b7b777", // 28
+	"777b7b7b7b7b7b7b7b7b7b7b7b77", // 28
+	"..777777777777777777777777..", // 28
 }, "\n")
 
 // Suit pip sprites: 5×7 pixels each
