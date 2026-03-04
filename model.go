@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"strings"
 	"time"
 
@@ -257,6 +258,11 @@ func (m model) renderShuffle() string {
 		}
 		buf[r] = row
 	}
+
+	// Sort by Z so cards with lower Z draw first (behind)
+	sort.Slice(m.anim.WashCards, func(i, j int) bool {
+		return m.anim.WashCards[i].Z < m.anim.WashCards[j].Z
+	})
 
 	// Composite each wash card onto the buffer
 	grid := m.anim.WashGrid

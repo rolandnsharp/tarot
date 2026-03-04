@@ -34,6 +34,7 @@ const (
 type WashCard struct {
 	X, Y   float64
 	VX, VY float64
+	Z      int // draw order: lower Z drawn first (behind)
 }
 
 type AnimState struct {
@@ -78,6 +79,7 @@ func (a *AnimState) initWashCards() {
 			Y:  cy,
 			VX: math.Cos(angle) * speed,
 			VY: math.Sin(angle) * speed,
+			Z:  rand.Intn(1000),
 		}
 	}
 }
@@ -107,6 +109,14 @@ func (a *AnimState) Tick() {
 
 		if pausing {
 			a.WashCards = a.WashCards[:0] // cards picked up, nothing to render
+		}
+
+		// Re-randomize a few Z values every ~15 frames for dynamic layering
+		if !converging && !settling && !pausing && a.Frame%15 == 0 {
+			for k := 0; k < 10 && k < len(a.WashCards); k++ {
+				idx := rand.Intn(len(a.WashCards))
+				a.WashCards[idx].Z = rand.Intn(1000)
+			}
 		}
 
 		for i := range a.WashCards {
