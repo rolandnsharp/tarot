@@ -31,6 +31,7 @@ type model struct {
 	revealIndex   int    // how many bytes of buffer are revealed
 	readingDone   bool
 	readingErr    error
+	readingEpoch  int    // incremented on each new reading to ignore stale messages
 }
 
 func newTextInput() textinput.Model {
@@ -83,11 +84,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			case "enter":
 				m.question = m.textInput.Value()
+				m.readingEpoch++
 				m.anim.Start()
 				cmds := []tea.Cmd{tickCmd()}
 				if m.config != nil {
 					m.readingCh = startReading(*m.config, m.cards, m.question)
-					cmds = append(cmds, waitForStream(m.readingCh))
+					cmds = append(cmds, waitForStream(m.readingCh, m.readingEpoch))
 				}
 				return m, tea.Batch(cmds...)
 			}
@@ -105,6 +107,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cards = DrawThree()
 			m.anim = NewAnimState()
 			m.anim.Phase = PhaseQuestion
+			m.anim.ScreenW = m.width
+			m.anim.ScreenH = m.height
 			m.question = ""
 			m.textInput = newTextInput()
 			m.readingCh = nil
@@ -159,19 +163,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.readingText = m.readingBuffer
 		return m, nil
 
-	case readingChunkMsg:
-		m.readingBuffer += msg.Text
-		return m, waitForStream(m.readingCh)
-
-	case readingDoneMsg:
-		m.readingDone = true
-		m.readingCh = nil
-		return m, nil
-
-	case readingErrMsg:
-		m.readingErr = msg.Err
-		m.readingCh = nil
-		return m, nil
+	case streamResult:
+		if msg.epoch != m.readingEpoch {
+			return m, nil // stale message from previous reading
+		}
+		switch inner := msg.msg.(type) {
+		case readingChunkMsg:
+			m.readingBuffer += inner.Text
+			return m, waitForStream(m.readingCh, m.readingEpoch)
+		case readingDoneMsg:
+			m.readingDone = true
+			m.readingCh = nil
+			return m, nil
+		case readingErrMsg:
+			m.readingErr = inner.Err
+			m.readingCh = nil
+			return m, nil
+		}
 	}
 	return m, nil
 }

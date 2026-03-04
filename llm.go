@@ -123,12 +123,18 @@ func startReading(cfg Config, cards []Card, question string) <-chan streamMsg {
 	return ch
 }
 
-func waitForStream(ch <-chan streamMsg) tea.Cmd {
+// streamResult wraps a stream message with an epoch to detect stale messages.
+type streamResult struct {
+	epoch int
+	msg   tea.Msg
+}
+
+func waitForStream(ch <-chan streamMsg, epoch int) tea.Cmd {
 	return func() tea.Msg {
 		msg, ok := <-ch
 		if !ok {
-			return readingDoneMsg{}
+			return streamResult{epoch, readingDoneMsg{}}
 		}
-		return msg.(tea.Msg)
+		return streamResult{epoch, msg.(tea.Msg)}
 	}
 }
