@@ -15,14 +15,44 @@ Type a question for the cards (or press Enter to skip), then watch the shuffle a
 
 ## AI Readings
 
-Create a `tarot.md` file in the same directory to enable AI-powered readings:
+Readings are powered by a local language model via [Ollama](https://ollama.com). Small models are ideal here — tarot is poetry, not precision. A 0.6B parameter model runs on almost anything and gives beautifully loose, creative interpretations.
+
+### Quick Setup
+
+1. **Install Ollama:**
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+2. **Pull the model:**
+
+```bash
+ollama pull qwen3:0.6b
+```
+
+3. **Start the server** (runs on port 11434 by default):
+
+```bash
+ollama serve
+```
+
+That's it. The included `tarot.md` is already configured to connect to Ollama locally. Run `./tarot`, type a question, and the reading begins.
+
+### Configuration
+
+The `tarot.md` file controls the reading experience:
 
 ```markdown
 ## Interpreter
-A mysterious oracle who speaks in poetic riddles.
+A pirate voodoo man who reads tarot in a swashbuckling african style,
+mixing creole mysticism with seafaring metaphors.
 
 ## Querent
-Your name, sign, interests — whatever context you want the reader to have.
+The person sitting at this terminal, whoever they may be.
+
+## Deck
+cyberpunk
 
 ## Connection
 provider: ollama
@@ -31,7 +61,27 @@ base_url: http://localhost:11434/v1
 api_key: unused
 ```
 
-Works with any OpenAI-compatible API (Ollama, OpenAI, etc).
+- **Interpreter** — the personality of the reader (change this to anything you like)
+- **Querent** — context about who's being read (make it personal or keep it generic)
+- **Deck** — `cyberpunk` for neon RGB art, or remove this line for the classic palette deck
+- **Connection** — works with any OpenAI-compatible API (Ollama, OpenAI, OpenRouter, etc)
+
+### Using Other Providers
+
+For OpenAI:
+```
+provider: openai
+model: gpt-4o-mini
+api_key: sk-...
+```
+
+For any OpenAI-compatible endpoint:
+```
+provider: openai
+model: your-model
+base_url: https://your-endpoint/v1
+api_key: your-key
+```
 
 ## Music
 

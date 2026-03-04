@@ -60,7 +60,7 @@ var (
 
 	// Waiting message
 	readingWaitStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("223")).
+				Foreground(colorLavender).
 				Italic(true).
 				Align(lipgloss.Center)
 

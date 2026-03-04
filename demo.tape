@@ -7,7 +7,7 @@ Set Padding 20
 Type "./tarot"
 Enter
 Sleep 1s
-Type "when will i get a job?"
+Type "what should i do next?"
 Sleep 500ms
 Enter
 Wait+Screen@2m /r reshuffle/

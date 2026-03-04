@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-	// Set terminal background to black (OSC 11)
-	fmt.Fprint(os.Stdout, "\033]11;#0a0510\a")
+	// Set terminal background to dark purple and hide scrollbar
+	fmt.Fprint(os.Stdout, "\033]11;#0a0510\a\033[?30l")
 
 	p := tea.NewProgram(
 		initialModel(),
@@ -17,8 +17,8 @@ func main() {
 	)
 	_, err := p.Run()
 
-	// Restore original terminal background (OSC 111)
-	fmt.Fprint(os.Stdout, "\033]111\a")
+	// Restore terminal background and scrollbar
+	fmt.Fprint(os.Stdout, "\033]111\a\033[?30h")
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
