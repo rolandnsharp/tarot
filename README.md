@@ -47,6 +47,10 @@ sudo apt install alsa-utils  # Debian/Ubuntu
 - [Mystical Guitar Atmosphere](https://freesound.org/s/719441/) by MichiJung — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - [Somnium](https://freesound.org/s/722400/) by Vrymaa — [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
 
+## Sound Effects
+
+- [Card Flip](https://freesound.org/s/240776/) by f4ngy — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
 ## Controls
 
 - **Enter** — begin the reading

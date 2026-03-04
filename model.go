@@ -143,7 +143,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.anim.Phase == PhaseReading {
 			return m, nil // no more animation ticks needed
 		}
+		prevDealt := m.anim.CardsDealt
+		prevShown := m.anim.CardsShown
 		m.anim.Tick()
+		if m.anim.CardsDealt > prevDealt {
+			PlaySFX("240776__f4ngy__card-flip.wav")
+		}
+		if m.anim.CardsShown > prevShown {
+			PlaySFX("240776__f4ngy__card-flip.wav")
+		}
 		if m.anim.Phase == PhaseDisplay && m.config != nil {
 			m.anim.Phase = PhaseReading
 			return m, typewriterCmd()

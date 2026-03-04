@@ -17,16 +17,37 @@ type MusicPlayer struct {
 	running bool
 }
 
-// findMusicDir locates the music/ directory relative to the executable,
+// findDir locates a named directory relative to the executable,
 // then falls back to the working directory.
-func findMusicDir() string {
+func findDir(name string) string {
 	if exe, err := os.Executable(); err == nil {
-		dir := filepath.Join(filepath.Dir(exe), "music")
+		dir := filepath.Join(filepath.Dir(exe), name)
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
 			return dir
 		}
 	}
-	return "music"
+	return name
+}
+
+// PlaySFX plays a one-shot sound effect from the sounds/ directory.
+// Silently does nothing if aplay or the file is not found.
+func PlaySFX(name string) {
+	aplayPath, err := exec.LookPath("aplay")
+	if err != nil {
+		return
+	}
+	path := filepath.Join(findDir("sounds"), name)
+	if _, err := os.Stat(path); err != nil {
+		return
+	}
+	cmd := exec.Command(aplayPath, "-q", path)
+	cmd.Stderr = nil
+	cmd.Stdout = nil
+	go cmd.Run()
+}
+
+func findMusicDir() string {
+	return findDir("music")
 }
 
 // pickRandomTrack returns the full path to a random .wav file in the music dir.
