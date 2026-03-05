@@ -56,7 +56,7 @@ func buildPrompt(cfg Config, cards []Card, question string) (system, user string
 		} else {
 			usr.WriteString(fmt.Sprintf(" [%s]", card.SuitName()))
 		}
-		usr.WriteString(fmt.Sprintf("\n   Upright: %s\n   Reversed: %s\n\n", card.Upright, card.Reversed))
+		usr.WriteString("\n")
 	}
 	if question != "" {
 		usr.WriteString("The querent's question is: ")
