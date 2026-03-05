@@ -22,6 +22,10 @@ jobs:
             goarch: amd64
           - goos: darwin
             goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -34,20 +38,32 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -o tarot .
+        run: |
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
+          go build -o "tarot${EXT}" .
 
       - name: Package
         run: |
           ARCHIVE="tarot-${{ matrix.goos }}-${{ matrix.goarch }}"
           mkdir "$ARCHIVE"
-          cp tarot README.md tarot.md "$ARCHIVE/"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            cp tarot.exe "$ARCHIVE/"
+          else
+            cp tarot "$ARCHIVE/"
+          fi
+          cp README.md tarot.md "$ARCHIVE/"
           cp -r decks sounds music "$ARCHIVE/"
-          tar czf "$ARCHIVE.tar.gz" "$ARCHIVE"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip -r "$ARCHIVE.zip" "$ARCHIVE"
+          else
+            tar czf "$ARCHIVE.tar.gz" "$ARCHIVE"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
           name: tarot-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: tarot-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          path: tarot-${{ matrix.goos }}-${{ matrix.goarch }}.*
 
   release:
     needs: build
@@ -60,7 +76,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: tarot-*.tar.gz
+          files: |
+            tarot-*.tar.gz
+            tarot-*.zip
           body: |
             ## Download
 
@@ -70,11 +88,16 @@ jobs:
             | Linux (ARM64, e.g. Raspberry Pi) | `tarot-linux-arm64.tar.gz` |
             | macOS (Apple Silicon) | `tarot-darwin-arm64.tar.gz` |
             | macOS (Intel) | `tarot-darwin-amd64.tar.gz` |
+            | Windows (x86_64) | `tarot-windows-amd64.zip` |
+            | Windows (ARM64) | `tarot-windows-arm64.zip` |
 
+            **Linux / macOS:**
             ```bash
             tar xzf tarot-*.tar.gz
             cd tarot-*/
             ./tarot
             ```
+
+            **Windows:** Extract the zip, then run `tarot.exe` from the extracted folder.
 
             Requires [Ollama](https://ollama.com) for AI readings. See the README for setup.
