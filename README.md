@@ -95,6 +95,10 @@ base_url: https://your-endpoint/v1
 api_key: your-key
 ```
 
+## Entropy
+
+The shuffle draws from real-world entropy. Go's runtime seeds its PRNG from the operating system's cryptographic entropy pool at startup — on Linux this is `getrandom`, fed by hardware interrupt timing, thermal noise, and disk jitter. Every launch produces a unique, unreproducible shuffle without any manual seeding. The cards are sorted by the chaos of the physical world.
+
 ## Music
 
 Place `.wav` files in a `music/` directory next to the binary. A random track will loop during each reading. Requires `aplay` (part of `alsa-utils`) for audio playback. If `aplay` is not available or the directory is missing, the app runs silently.
