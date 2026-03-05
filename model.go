@@ -125,6 +125,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "r":
 			m.music.Play() // new random track
+			// Random deck if none pinned in config
+			if m.config == nil || m.config.Deck == "" {
+				if decks := ListDecks(); len(decks) > 0 {
+					ActiveDeck = decks[rand.Intn(len(decks))]
+				}
+			}
 			// Reshuffle and reset reading
 			m.cards = DrawThree()
 			m.anim = NewAnimState()
