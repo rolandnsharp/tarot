@@ -61,7 +61,7 @@ api_key: unused
 
 - **Interpreter** — custom personality for the reader. When left blank, the deck itself sets the tone (each deck has a built-in voice — the cyberpunk deck reads like a neon-lit street oracle, the gothic deck speaks like light through cathedral glass, etc). Add text here to override with your own personality.
 - **Querent** — context about who's being read (make it personal or keep it generic)
-- **Deck** — `cyberpunk`, `nouveau`, `ukiyoe`, or `gothic`
+- **Deck** — `cyberpunk`, `nouveau`, or `gothic`
 - **Connection** — works with any OpenAI-compatible API (Ollama, OpenAI, OpenRouter, etc)
 
 ### Using Other Providers

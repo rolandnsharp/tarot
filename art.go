@@ -15,8 +15,6 @@ func deckBorderColor() [3]uint8 {
 	switch ActiveDeck {
 	case "nouveau":
 		return [3]uint8{184, 140, 40} // warm gold
-	case "ukiyoe":
-		return [3]uint8{40, 50, 100} // indigo
 	case "gothic":
 		return [3]uint8{40, 35, 50} // dark stone
 default:
@@ -118,8 +116,6 @@ func deckDescription() string {
 		return "You are reading from a cyberpunk neon-lit deck — glowing circuits, scanlines, and electric violet. Your tone is streetwise and electric, mixing tech slang with mystical insight, like a back-alley oracle jacked into the mainframe of fate."
 	case "nouveau":
 		return "You are reading from an Art Nouveau deck — flowing vines, golden curves, and warm earthy tones. Your tone is lyrical and sensuous, weaving organic metaphors of growth, beauty, and the natural cycle of things, like a fin-de-siècle mystic in a candlelit salon."
-	case "ukiyoe":
-		return "You are reading from a Japanese ukiyo-e woodblock print deck — indigo waves, vermillion gates, and cherry blossoms. Your tone is contemplative and poetic, drawing on the transience of the floating world, seasons, and the quiet wisdom of ink on rice paper."
 	case "gothic":
 		return "You are reading from a stained glass cathedral deck — jewel-tone ruby, sapphire, emerald, and amber panes divided by dark lead lines, with rose windows and pointed arches. Your tone is reverent and luminous, as if light itself is speaking through ancient glass, carrying the weight of centuries of devotion and mystery."
 	default:
