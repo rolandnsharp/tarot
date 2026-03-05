@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -8,6 +9,16 @@ import (
 )
 
 func main() {
+	sshMode := flag.Bool("ssh", false, "run as an SSH server")
+	sshHost := flag.String("host", "localhost", "SSH server host")
+	sshPort := flag.String("port", "2222", "SSH server port")
+	flag.Parse()
+
+	if *sshMode {
+		runSSHServer(*sshHost, *sshPort)
+		return
+	}
+
 	// Set terminal background to dark purple and hide scrollbar
 	fmt.Fprint(os.Stdout, "\033]11;#0a0510\a\033[?30l")
 

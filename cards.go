@@ -26,33 +26,6 @@ func (c Card) IsMajor() bool {
 	return c.Suit == MajorArcana
 }
 
-// PrimaryColor returns the palette byte for this suit's main color.
-// Red for Hearts(Cups)/Diamonds(Pentacles), dark for Clubs(Wands)/Spades(Swords).
-func (s Suit) PrimaryColor() byte {
-	switch s {
-	case Cups, Pentacles:
-		return '3' // red
-	default:
-		return '1' // dark
-	}
-}
-
-// SecondaryColor returns a lighter accent color for the suit.
-func (s Suit) SecondaryColor() byte {
-	switch s {
-	case Cups:
-		return '9' // blue
-	case Pentacles:
-		return '5' // gold
-	case Wands:
-		return '8' // green
-	case Swords:
-		return 'd' // gray
-	default:
-		return '7' // purple
-	}
-}
-
 // PlayingCardSymbol returns the playing card suit symbol.
 // Wands→♣, Cups→♥, Swords→♠, Pentacles→♦
 func (s Suit) PlayingCardSymbol() string {

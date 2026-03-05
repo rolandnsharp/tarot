@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"sort"
 	"strings"
 	"time"
@@ -53,6 +54,11 @@ func initialModel() model {
 	cfg, _ := LoadConfig()
 	if cfg != nil && cfg.Deck != "" {
 		ActiveDeck = cfg.Deck
+	} else {
+		// No deck configured — pick a random available deck
+		if decks := ListDecks(); len(decks) > 0 {
+			ActiveDeck = decks[rand.Intn(len(decks))]
+		}
 	}
 	anim := NewAnimState()
 	anim.Phase = PhaseQuestion
@@ -278,10 +284,7 @@ func (m model) renderShuffle() string {
 		return m.anim.WashCards[i].Z < m.anim.WashCards[j].Z
 	})
 
-	if m.anim.WashIsRGB {
-		return m.renderShuffleRGB(bufW, bufH)
-	}
-	return m.renderShufflePalette(bufW, bufH)
+	return m.renderShuffleRGB(bufW, bufH)
 }
 
 func (m model) renderShuffleRGB(bufW, bufH int) string {
@@ -313,40 +316,6 @@ func (m model) renderShuffleRGB(bufW, bufH int) string {
 	}
 
 	return RenderRGBPixelBuffer(buf)
-}
-
-func (m model) renderShufflePalette(bufW, bufH int) string {
-	buf := make([][]byte, bufH)
-	for r := range buf {
-		row := make([]byte, bufW)
-		for c := range row {
-			row[c] = '.'
-		}
-		buf[r] = row
-	}
-
-	grid := m.anim.WashGrid
-	for _, wc := range m.anim.WashCards {
-		sx := int(wc.X)
-		sy := int(wc.Y)
-		for py, gridRow := range grid {
-			dy := sy + py
-			if dy < 0 || dy >= bufH {
-				continue
-			}
-			for px, ch := range gridRow {
-				dx := sx + px
-				if dx < 0 || dx >= bufW {
-					continue
-				}
-				if ch != '.' {
-					buf[dy][dx] = ch
-				}
-			}
-		}
-	}
-
-	return RenderPixelBuffer(buf)
 }
 
 func (m model) renderCards() string {
