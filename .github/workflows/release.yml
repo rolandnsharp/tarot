@@ -60,5 +60,21 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
           files: tarot-*.tar.gz
+          body: |
+            ## Download
+
+            | Platform | File |
+            |----------|------|
+            | Linux (x86_64) | `tarot-linux-amd64.tar.gz` |
+            | Linux (ARM64, e.g. Raspberry Pi) | `tarot-linux-arm64.tar.gz` |
+            | macOS (Apple Silicon) | `tarot-darwin-arm64.tar.gz` |
+            | macOS (Intel) | `tarot-darwin-amd64.tar.gz` |
+
+            ```bash
+            tar xzf tarot-*.tar.gz
+            cd tarot-*/
+            ./tarot
+            ```
+
+            Requires [Ollama](https://ollama.com) for AI readings. See the README for setup.
