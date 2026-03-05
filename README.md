@@ -4,7 +4,21 @@ A terminal tarot card reader with pixel art cards, shuffle animations, and AI-po
 
 ![demo](https://raw.githubusercontent.com/rolandnsharp/tarot/main/demo.gif)
 
-## Usage
+## Install
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/rolandnsharp/tarot/releases), then:
+
+```bash
+tar xzf tarot-*.tar.gz
+cd tarot-*/
+./tarot
+```
+
+The archive includes the binary, card decks, sounds, and music — no Go installation needed.
+
+### Build from Source
+
+If you prefer to build from source (requires Go 1.24+):
 
 ```bash
 go build -o tarot .
