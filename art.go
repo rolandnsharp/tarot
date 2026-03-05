@@ -17,6 +17,8 @@ func deckBorderColor() [3]uint8 {
 		return [3]uint8{184, 140, 40} // warm gold
 	case "ukiyoe":
 		return [3]uint8{40, 50, 100} // indigo
+	case "gothic":
+		return [3]uint8{40, 35, 50} // dark stone
 default:
 		return [3]uint8{139, 47, 201} // cyberpunk purple
 	}
