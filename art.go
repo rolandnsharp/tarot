@@ -271,14 +271,15 @@ func GeneratePipCard(number int, suit Suit) string {
 	return strings.Join(lines, "\n")
 }
 
-// GetCardArt returns the fully rendered pixel art string for a card face.
+// GetCardArt returns the fully rendered pixel art string for a card face,
+// with the card name embedded in the bottom border.
 func GetCardArt(c Card) string {
 	// Try loading from active deck first
 	if ActiveDeck != "" {
 		if path := cardHexPath(c); path != "" {
 			if pixels, err := LoadHexCard(path); err == nil {
 				frame := BuildRGBCardFrame(pixels, [3]uint8{139, 47, 201})
-				return RenderRGBFrame(frame)
+				return RenderRGBFrameWithLabel(frame, c.Name)
 			}
 		}
 	}
@@ -293,7 +294,7 @@ func GetCardArt(c Card) string {
 		inner = GeneratePipCard(c.Number, c.Suit)
 	}
 	framed := BuildCardFrame(inner, '7', '2') // purple border, cream bg
-	return RenderPixelArt(framed)
+	return RenderPaletteFrameWithLabel(framed, c.Name)
 }
 
 // GetCardBack returns the fully rendered pixel art string for the card back.

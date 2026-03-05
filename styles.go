@@ -12,24 +12,6 @@ var (
 	colorMagenta   = lipgloss.Color("#8b2fc9")
 	colorDimPurple = lipgloss.Color("#2d1150")
 
-	// Card name
-	cardNameStyle = lipgloss.NewStyle().
-			Foreground(colorMagenta).
-			Bold(true).
-			Align(lipgloss.Center)
-
-	// Card meaning
-	meaningStyle = lipgloss.NewStyle().
-			Foreground(colorCream).
-			Italic(true).
-			Align(lipgloss.Center)
-
-	// Position labels (Past, Present, Future)
-	positionStyle = lipgloss.NewStyle().
-			Foreground(colorMagenta).
-			Bold(true).
-			Align(lipgloss.Center)
-
 	// Title style
 	titleStyle = lipgloss.NewStyle().
 			Foreground(colorGold).
@@ -82,6 +64,4 @@ var (
 				Italic(true).
 				Align(lipgloss.Center)
 
-	// Spread positions
-	positions = []string{"PAST", "PRESENT", "FUTURE"}
 )

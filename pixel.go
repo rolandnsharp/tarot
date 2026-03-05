@@ -192,6 +192,91 @@ func RenderRGBFrame(frame [44][28][3]uint8) string {
 	return sb.String()
 }
 
+// buildLabelRow renders a single terminal row with the card name centered in the bottom border.
+// The outer 2 chars on each side render as half-block corners (border over transparent),
+// and the middle 24 chars render as black text on the border color background.
+func buildLabelRow(label string, bc [3]uint8) string {
+	// Truncate and center label in 24 chars
+	if len(label) > 24 {
+		label = label[:24]
+	}
+	pad := 24 - len(label)
+	left := pad / 2
+	right := pad - left
+	centered := strings.Repeat(" ", left) + label + strings.Repeat(" ", right)
+
+	var sb strings.Builder
+	corner := fgColor(bc[0], bc[1], bc[2]) + "▀" + resetCode
+	// Left 2 corner chars
+	sb.WriteString(corner)
+	sb.WriteString(corner)
+	// Middle 24 chars: bold black text on border background
+	sb.WriteString("\033[1m")
+	sb.WriteString(fgColor(0, 0, 0))
+	sb.WriteString(bgColor(bc[0], bc[1], bc[2]))
+	sb.WriteString(centered)
+	sb.WriteString(resetCode)
+	// Right 2 corner chars
+	sb.WriteString(corner)
+	sb.WriteString(corner)
+	return sb.String()
+}
+
+// RenderRGBFrameWithLabel renders a 44×28 framed RGB grid with the card name
+// embedded in the bottom border. Rows 0-41 render as half-block art (21 terminal rows),
+// and the last terminal row shows the label as styled text replacing the bottom border.
+func RenderRGBFrameWithLabel(frame [44][28][3]uint8, label string) string {
+	var sb strings.Builder
+	// Render first 42 pixel rows as half-block art (21 terminal rows)
+	for row := 0; row < 42; row += 2 {
+		for col := 0; col < 28; col++ {
+			top := frame[row][col]
+			bot := frame[row+1][col]
+			topTransparent := top[0] == 0 && top[1] == 0 && top[2] == 0
+			botTransparent := bot[0] == 0 && bot[1] == 0 && bot[2] == 0
+
+			if topTransparent && botTransparent {
+				sb.WriteString(" ")
+			} else if topTransparent {
+				sb.WriteString(fgColor(bot[0], bot[1], bot[2]))
+				sb.WriteString("▄")
+				sb.WriteString(resetCode)
+			} else if botTransparent {
+				sb.WriteString(fgColor(top[0], top[1], top[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			} else {
+				sb.WriteString(fgColor(top[0], top[1], top[2]))
+				sb.WriteString(bgColor(bot[0], bot[1], bot[2]))
+				sb.WriteString("▀")
+				sb.WriteString(resetCode)
+			}
+		}
+		sb.WriteString("\n")
+	}
+	// Append label row (replaces pixel rows 42-43)
+	bc := frame[42][2] // border color from a non-corner pixel
+	sb.WriteString(buildLabelRow(label, bc))
+	return sb.String()
+}
+
+// RenderPaletteFrameWithLabel renders palette-based pixel art with the card name
+// embedded in the bottom border. The first 42 pixel rows render as half-block art,
+// and the last terminal row shows the label as styled text replacing the bottom border.
+func RenderPaletteFrameWithLabel(art string, label string) string {
+	lines := strings.Split(art, "\n")
+	if len(lines) > 0 && lines[0] == "" {
+		lines = lines[1:]
+	}
+	// Take only first 42 rows for half-block rendering
+	if len(lines) > 42 {
+		lines = lines[:42]
+	}
+	halfBlock := RenderPixelArt(strings.Join(lines, "\n"))
+	bc := Palette['7'] // purple border
+	return halfBlock + "\n" + buildLabelRow(label, bc)
+}
+
 // ParsePixelGrid converts a newline-separated palette string into a 2D byte grid.
 func ParsePixelGrid(art string) [][]byte {
 	lines := strings.Split(art, "\n")
@@ -401,8 +486,6 @@ func BuildCardFrame(inner string, borderColor, bgColor byte) string {
 
 	var rows []string
 	// Top border: 2 rows with rounded corners
-	// Row 0: ..BBBBBBBBBBBBBBBBBBBBBBBBBB.. (corners transparent)
-	// Row 1: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB (full width)
 	topRow0 := ".." + strings.Repeat(bc, 24) + ".."
 	topRow1 := strings.Repeat(bc, 28)
 	rows = append(rows, topRow0, topRow1)

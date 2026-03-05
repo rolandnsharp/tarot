@@ -351,8 +351,6 @@ func (m model) renderShufflePalette(bufW, bufH int) string {
 
 func (m model) renderCards() string {
 	var cardViews [3]string
-	var nameViews [3]string
-	var posViews [3]string
 
 	// Card width is 28 chars (pixel art width)
 	cardW := 28
@@ -361,37 +359,22 @@ func (m model) renderCards() string {
 		if !m.anim.CardVisible(i) {
 			// Empty placeholder matching card dimensions
 			cardViews[i] = strings.Repeat(" ", cardW)
-			nameViews[i] = strings.Repeat(" ", cardW)
-			posViews[i] = strings.Repeat(" ", cardW)
 			continue
 		}
 
 		if m.anim.CardRevealed(i) {
-			// Show card face
+			// Show card face (name is embedded in the card art)
 			cardViews[i] = GetCardArt(m.cards[i])
-			nameViews[i] = cardNameStyle.Width(cardW).Render("— " + m.cards[i].Name + " —")
-			posViews[i] = positionStyle.Width(cardW).Render("— " + positions[i] + " —")
 		} else {
 			// Show card back
 			cardViews[i] = GetCardBack()
-			nameViews[i] = strings.Repeat(" ", cardW)
-			posViews[i] = strings.Repeat(" ", cardW)
 		}
 	}
 
 	gap := "   "
 	cardRow := lipgloss.JoinHorizontal(lipgloss.Top, cardViews[0], gap, cardViews[1], gap, cardViews[2])
-	posRow := lipgloss.JoinHorizontal(lipgloss.Top, posViews[0], gap, posViews[1], gap, posViews[2])
-	nameRow := lipgloss.JoinHorizontal(lipgloss.Top, nameViews[0], gap, nameViews[1], gap, nameViews[2])
 
-	// Center everything
-	content := lipgloss.JoinVertical(lipgloss.Center,
-		posRow,
-		cardRow,
-		nameRow,
-	)
-
-	return lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, content)
+	return lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, cardRow)
 }
 
 func (m model) renderReading() string {
