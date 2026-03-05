@@ -110,6 +110,23 @@ func GetCardArt(c Card) string {
 	return RenderRGBFrameWithLabel(frame, c.Name)
 }
 
+// deckDescription returns a short flavor description of the active deck,
+// used as the default interpreter personality when none is configured.
+func deckDescription() string {
+	switch ActiveDeck {
+	case "cyberpunk":
+		return "You are reading from a cyberpunk neon-lit deck — glowing circuits, scanlines, and electric violet. Your tone is streetwise and electric, mixing tech slang with mystical insight, like a back-alley oracle jacked into the mainframe of fate."
+	case "nouveau":
+		return "You are reading from an Art Nouveau deck — flowing vines, golden curves, and warm earthy tones. Your tone is lyrical and sensuous, weaving organic metaphors of growth, beauty, and the natural cycle of things, like a fin-de-siècle mystic in a candlelit salon."
+	case "ukiyoe":
+		return "You are reading from a Japanese ukiyo-e woodblock print deck — indigo waves, vermillion gates, and cherry blossoms. Your tone is contemplative and poetic, drawing on the transience of the floating world, seasons, and the quiet wisdom of ink on rice paper."
+	case "gothic":
+		return "You are reading from a stained glass cathedral deck — jewel-tone ruby, sapphire, emerald, and amber panes divided by dark lead lines, with rose windows and pointed arches. Your tone is reverent and luminous, as if light itself is speaking through ancient glass, carrying the weight of centuries of devotion and mystery."
+	default:
+		return ""
+	}
+}
+
 // GetCardBack returns the fully rendered pixel art string for the card back.
 func GetCardBack() string {
 	dir := deckDir()

@@ -28,6 +28,9 @@ func buildPrompt(cfg Config, cards []Card, question string) (system, user string
 	if cfg.Interpreter != "" {
 		sys.WriteString(cfg.Interpreter)
 		sys.WriteString("\n\n")
+	} else if desc := deckDescription(); desc != "" {
+		sys.WriteString(desc)
+		sys.WriteString("\n\n")
 	}
 	sys.WriteString("You are giving a three-card tarot reading (Past, Present, Future spread). ")
 	sys.WriteString("Give a rich, intuitive reading that weaves the three cards into a cohesive narrative. ")

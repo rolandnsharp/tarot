@@ -45,14 +45,12 @@ The `tarot.md` file controls the reading experience:
 
 ```markdown
 ## Interpreter
-A pirate voodoo man who reads tarot in a swashbuckling african style,
-mixing creole mysticism with seafaring metaphors.
 
 ## Querent
 The person sitting at this terminal, whoever they may be.
 
 ## Deck
-cyberpunk
+gothic
 
 ## Connection
 provider: ollama
@@ -61,9 +59,9 @@ base_url: http://localhost:11434/v1
 api_key: unused
 ```
 
-- **Interpreter** — the personality of the reader (change this to anything you like)
+- **Interpreter** — custom personality for the reader. When left blank, the deck itself sets the tone (each deck has a built-in voice — the cyberpunk deck reads like a neon-lit street oracle, the gothic deck speaks like light through cathedral glass, etc). Add text here to override with your own personality.
 - **Querent** — context about who's being read (make it personal or keep it generic)
-- **Deck** — `cyberpunk` for neon RGB art, or remove this line for the classic palette deck
+- **Deck** — `cyberpunk`, `nouveau`, `ukiyoe`, or `gothic`
 - **Connection** — works with any OpenAI-compatible API (Ollama, OpenAI, OpenRouter, etc)
 
 ### Using Other Providers
