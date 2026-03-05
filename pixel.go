@@ -102,9 +102,17 @@ func buildLabelRow(label string, bc [3]uint8) string {
 	// Left 2 corner chars
 	sb.WriteString(corner)
 	sb.WriteString(corner)
-	// Middle 24 chars: bold black text on border background
+	// Middle 24 chars: bold text on border background
+	// Pick white or black text based on border luminance
+	lum := 0.299*float64(bc[0]) + 0.587*float64(bc[1]) + 0.114*float64(bc[2])
+	var fr, fg, fb uint8
+	if lum > 50 {
+		fr, fg, fb = 0, 0, 0
+	} else {
+		fr, fg, fb = 224, 208, 240 // lavender — matches reading text
+	}
 	sb.WriteString("\033[1m")
-	sb.WriteString(fgColor(0, 0, 0))
+	sb.WriteString(fgColor(fr, fg, fb))
 	sb.WriteString(bgColor(bc[0], bc[1], bc[2]))
 	sb.WriteString(centered)
 	sb.WriteString(resetCode)

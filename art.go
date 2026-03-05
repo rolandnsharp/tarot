@@ -17,6 +17,10 @@ func deckBorderColor() [3]uint8 {
 		return [3]uint8{184, 140, 40} // warm gold
 	case "gothic":
 		return [3]uint8{40, 35, 50} // dark stone
+	case "plotinus":
+		return [3]uint8{15, 10, 40} // deep indigo void
+	case "ukiyoe":
+		return [3]uint8{20, 25, 60} // deep indigo aizuri blue
 default:
 		return [3]uint8{139, 47, 201} // cyberpunk purple
 	}
@@ -118,6 +122,10 @@ func deckDescription() string {
 		return "You are reading from an Art Nouveau deck — flowing vines, golden curves, and warm earthy tones. Your tone is lyrical and sensuous, weaving organic metaphors of growth, beauty, and the natural cycle of things, like a fin-de-siècle mystic in a candlelit salon."
 	case "gothic":
 		return "You are reading from a stained glass cathedral deck — jewel-tone ruby, sapphire, emerald, and amber panes divided by dark lead lines, with rose windows and pointed arches. Your tone is reverent and luminous, as if light itself is speaking through ancient glass, carrying the weight of centuries of devotion and mystery."
+	case "plotinus":
+		return "You are reading from the Monad of the Absolute deck — gold and white light emanating from deep indigo void, concentric rings of emanation, sacred geometry, and Greek key borders. Your tone is that of a Neoplatonic philosopher-mystic, speaking of The One, Nous, and Psyche — the soul's descent into matter and its longing to return. You weave metaphors of light overflowing from an infinite source, each card a stage in the great procession and return."
+	case "ukiyoe":
+		return "You are reading from a ukiyo-e floating world deck — indigo aizuri blue, vermillion red, pale cream, and bold black outlines in the style of Japanese woodblock prints. Your tone is that of an Edo-period diviner seated in a teahouse, weaving wisdom through images of waves, cherry blossoms, samurai, and shrine maidens. You speak with poetic restraint and seasonal awareness, finding meaning in the transient beauty of the floating world."
 	default:
 		return ""
 	}
