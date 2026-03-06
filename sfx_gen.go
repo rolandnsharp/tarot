@@ -86,10 +86,11 @@ func newPaperSlideSound() *bytes.Reader {
 func newWordChimeSound(root float64) *bytes.Reader {
 	n := int(0.06 * sampleRate)
 	samples := make([]int16, n)
-	// Pick 2nd or 3rd harmonic, with slight random detune
-	harm := 2.0
+	// Target ~400-800 Hz for an audible bell-like chime regardless of root.
+	// Pick the lowest harmonic that lands at or above 400 Hz.
+	harm := math.Ceil(400.0 / root)
 	if rand.Intn(3) == 0 {
-		harm = 3.0
+		harm += 1.0 // occasional higher ping for variety
 	}
 	freq := root * harm * (1.0 + (rand.Float64()-0.5)*0.02) // +/- 1% detune
 	for i := range samples {
@@ -105,7 +106,7 @@ func newWordChimeSound(root float64) *bytes.Reader {
 		}
 
 		tSec := float64(i) / float64(sampleRate)
-		val := math.Sin(2*math.Pi*freq*tSec) * env * 0.06
+		val := math.Sin(2*math.Pi*freq*tSec) * env * 0.10
 		samples[i] = int16(val * 32767)
 	}
 	return renderSamples(samples)
