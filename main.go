@@ -1,13 +1,19 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+var silentMode bool
+
 func main() {
+	flag.BoolVar(&silentMode, "silent", false, "disable all audio")
+	flag.Parse()
+
 	// Set terminal background to dark purple and hide scrollbar
 	fmt.Fprint(os.Stdout, "\033]11;#0a0510\a\033[?30l")
 

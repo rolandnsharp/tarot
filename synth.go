@@ -21,7 +21,11 @@ var (
 )
 
 // initAudio creates the shared Oto audio context. Call once at startup.
+// Skipped when silentMode is set.
 func initAudio() {
+	if silentMode {
+		return
+	}
 	otoCtxOnce.Do(func() {
 		op := &oto.NewContextOptions{
 			SampleRate:   sampleRate,
