@@ -109,3 +109,37 @@ func PlaySFX(name string) {
 		activeSFX.mu.Unlock()
 	}()
 }
+
+// PlayWordChime plays a short tonal ping tuned to the active deck's root.
+func PlayWordChime(deck string) {
+	if otoCtx == nil {
+		return
+	}
+
+	data := cachedWordChime(deck)
+	if data == nil {
+		return
+	}
+
+	r := bytes.NewReader(data)
+	player := otoCtx.NewPlayer(r)
+	player.Play()
+
+	activeSFX.mu.Lock()
+	activeSFX.players = append(activeSFX.players, player)
+	activeSFX.mu.Unlock()
+
+	go func() {
+		for player.IsPlaying() {
+			time.Sleep(10 * time.Millisecond)
+		}
+		activeSFX.mu.Lock()
+		for i, p := range activeSFX.players {
+			if p == player {
+				activeSFX.players = append(activeSFX.players[:i], activeSFX.players[i+1:]...)
+				break
+			}
+		}
+		activeSFX.mu.Unlock()
+	}()
+}

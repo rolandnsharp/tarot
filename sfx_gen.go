@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"math"
 	"math/rand"
+	"sync"
 )
 
 // renderSamples pre-renders stereo int16LE samples into a bytes.Reader.
@@ -81,6 +82,35 @@ func newPaperSlideSound() *bytes.Reader {
 	return renderSamples(samples)
 }
 
+// newWordChimeSound generates a ~60ms tonal ping tuned to a harmonic of the given root.
+func newWordChimeSound(root float64) *bytes.Reader {
+	n := int(0.06 * sampleRate)
+	samples := make([]int16, n)
+	// Pick 2nd or 3rd harmonic, with slight random detune
+	harm := 2.0
+	if rand.Intn(3) == 0 {
+		harm = 3.0
+	}
+	freq := root * harm * (1.0 + (rand.Float64()-0.5)*0.02) // +/- 1% detune
+	for i := range samples {
+		t := float64(i) / float64(n)
+		// Fast attack (5ms), smooth exponential decay
+		var env float64
+		attackT := 0.08 // 5ms / 60ms ≈ 0.08
+		if t < attackT {
+			env = t / attackT
+		} else {
+			// Exponential decay for natural ring-out
+			env = math.Exp(-6.0 * (t - attackT))
+		}
+
+		tSec := float64(i) / float64(sampleRate)
+		val := math.Sin(2*math.Pi*freq*tSec) * env * 0.06
+		samples[i] = int16(val * 32767)
+	}
+	return renderSamples(samples)
+}
+
 // sfxBytes pre-renders an SFX into a byte slice for repeated playback.
 func sfxBytes(name string) []byte {
 	var r *bytes.Reader
@@ -119,4 +149,30 @@ func cachedSFX(name string) []byte {
 		sfxCache.once[idx] = true
 	}
 	return sfxCache.buffers[idx]
+}
+
+// chimeCache holds pre-rendered word chime bytes keyed by deck name.
+var chimeCache struct {
+	mu   sync.Mutex
+	data map[string][]byte
+}
+
+// cachedWordChime returns a pre-rendered chime for the given deck.
+// A new random chime is generated on first call per deck.
+func cachedWordChime(deck string) []byte {
+	chimeCache.mu.Lock()
+	defer chimeCache.mu.Unlock()
+	if chimeCache.data == nil {
+		chimeCache.data = make(map[string][]byte)
+	}
+	if buf, ok := chimeCache.data[deck]; ok {
+		return buf
+	}
+	voice := voiceForDeck(deck)
+	root := voice.roots[rand.Intn(len(voice.roots))]
+	r := newWordChimeSound(root)
+	buf := make([]byte, r.Len())
+	_, _ = r.Read(buf)
+	chimeCache.data[deck] = buf
+	return buf
 }

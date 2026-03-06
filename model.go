@@ -203,6 +203,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.revealIndex = i
 			m.readingText = m.readingBuffer[:m.revealIndex]
+			PlayWordChime(ActiveDeck)
 			return m, typewriterCmd()
 		}
 		if !m.readingDone {
