@@ -77,7 +77,6 @@ jobs:
             cp tarot "$ARCHIVE/"
           fi
           cp README.md tarot.md "$ARCHIVE/"
-          cp -r decks "$ARCHIVE/"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             zip -r "$ARCHIVE.zip" "$ARCHIVE"
           else
