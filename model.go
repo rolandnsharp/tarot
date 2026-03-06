@@ -34,7 +34,8 @@ type model struct {
 	revealIndex   int    // how many bytes of buffer are revealed
 	readingDone   bool
 	readingErr    error
-	readingEpoch  int    // incremented on each new reading to ignore stale messages
+	readingEpoch   int  // incremented on each new reading to ignore stale messages
+	readingPaused  bool // spacebar pause during typewriter reveal
 }
 
 func newTextInput() textinput.Model {
@@ -123,6 +124,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.music.Stop()
 			m.quitting = true
 			return m, tea.Quit
+		case " ":
+			if m.anim.Phase == PhaseReading {
+				m.readingPaused = !m.readingPaused
+				if !m.readingPaused && (m.revealIndex < len(m.readingBuffer) || !m.readingDone) {
+					return m, typewriterCmd()
+				}
+				return m, nil
+			}
 		case "r":
 			m.music.Play() // new random track
 			// Random deck if none pinned in config
@@ -145,6 +154,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.revealIndex = 0
 			m.readingDone = false
 			m.readingErr = nil
+			m.readingPaused = false
 			return m, nil
 		}
 
@@ -178,6 +188,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tickCmd()
 
 	case typewriterMsg:
+		if m.readingPaused {
+			return m, nil
+		}
 		if m.revealIndex < len(m.readingBuffer) {
 			// Skip any leading whitespace, then advance to end of next word
 			i := m.revealIndex
@@ -252,9 +265,20 @@ func (m model) View() string {
 		s.WriteString("\n" + hint)
 	}
 
-	// Show help hint when reading is fully revealed or cards displayed without config
-	if (m.anim.Phase == PhaseReading && m.readingDone && m.revealIndex >= len(m.readingBuffer)) ||
-		(m.anim.Phase == PhaseDisplay) {
+	// Show help hint during reading or when cards displayed without config
+	if m.anim.Phase == PhaseReading {
+		revealing := m.revealIndex < len(m.readingBuffer) || !m.readingDone
+		var helpText string
+		if revealing && m.readingPaused {
+			helpText = "space resume · r reshuffle · q quit"
+		} else if revealing {
+			helpText = "space pause · r reshuffle · q quit"
+		} else {
+			helpText = "r reshuffle · q quit"
+		}
+		help := helpStyle.Width(m.width).Render(helpText)
+		s.WriteString("\n\n" + help)
+	} else if m.anim.Phase == PhaseDisplay {
 		help := helpStyle.Width(m.width).Render("r reshuffle · q quit")
 		s.WriteString("\n\n" + help)
 	}
@@ -379,7 +403,11 @@ func (m model) renderReading() string {
 
 	// Add cursor if still revealing
 	if m.revealIndex < len(m.readingBuffer) || !m.readingDone {
-		wrapped += readingCursorStyle.Render("█")
+		if m.readingPaused {
+			wrapped += readingCursorStyle.Render("▮")
+		} else {
+			wrapped += readingCursorStyle.Render("█")
+		}
 	}
 
 	rendered := readingStyle.Render(wrapped)
