@@ -1,11 +1,15 @@
 package main
 
 import (
+	"embed"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
+	"path"
 	"strings"
 )
+
+//go:embed decks
+var decksFS embed.FS
 
 // ActiveDeck holds the currently selected deck name.
 var ActiveDeck string
@@ -28,24 +32,12 @@ default:
 	}
 }
 
-// deckDir returns the base directory for a named deck.
+// deckDir returns the embedded path prefix for the active deck.
 func deckDir() string {
 	if ActiveDeck == "" {
 		return ""
 	}
-	// Look for decks/ relative to the executable, then current directory
-	exe, _ := os.Executable()
-	exeDir := filepath.Dir(exe)
-	candidates := []string{
-		filepath.Join(exeDir, "decks", ActiveDeck),
-		filepath.Join("decks", ActiveDeck),
-	}
-	for _, d := range candidates {
-		if info, err := os.Stat(d); err == nil && info.IsDir() {
-			return d
-		}
-	}
-	return filepath.Join("decks", ActiveDeck) // fallback
+	return path.Join("decks", ActiveDeck)
 }
 
 // cardHexPath returns the .hex file path for a card in the active deck.
@@ -55,9 +47,9 @@ func cardHexPath(c Card) string {
 		return ""
 	}
 	if c.IsMajor() {
-		return filepath.Join(dir, "major", fmt.Sprintf("%02d-%s.hex", c.Number, slugify(c.Name)))
+		return path.Join(dir, "major", fmt.Sprintf("%02d-%s.hex", c.Number, slugify(c.Name)))
 	}
-	return filepath.Join(dir, "minor", fmt.Sprintf("%s-%02d.hex", strings.ToLower(c.SuitName()), c.Number))
+	return path.Join(dir, "minor", fmt.Sprintf("%s-%02d.hex", strings.ToLower(c.SuitName()), c.Number))
 }
 
 // slugify converts a card name to a filename-safe slug.
@@ -74,26 +66,16 @@ func slugify(name string) string {
 	return b.String()
 }
 
-// ListDecks returns names of available decks in the decks/ directory.
+// ListDecks returns names of available decks from the embedded filesystem.
 func ListDecks() []string {
 	var decks []string
-	exe, _ := os.Executable()
-	exeDir := filepath.Dir(exe)
-	searchDirs := []string{
-		filepath.Join(exeDir, "decks"),
-		"decks",
+	entries, err := fs.ReadDir(decksFS, "decks")
+	if err != nil {
+		return nil
 	}
-	seen := make(map[string]bool)
-	for _, base := range searchDirs {
-		entries, err := os.ReadDir(base)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			if e.IsDir() && !seen[e.Name()] {
-				seen[e.Name()] = true
-				decks = append(decks, e.Name())
-			}
+	for _, e := range entries {
+		if e.IsDir() {
+			decks = append(decks, e.Name())
 		}
 	}
 	return decks
@@ -141,7 +123,7 @@ func GetCardBack() string {
 	if dir == "" {
 		return ""
 	}
-	pixels, err := LoadHexCard(filepath.Join(dir, "back.hex"))
+	pixels, err := LoadHexCard(path.Join(dir, "back.hex"))
 	if err != nil {
 		return ""
 	}

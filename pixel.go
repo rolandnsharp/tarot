@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -214,11 +213,11 @@ func RenderRGBPixelBuffer(buf [][][3]uint8) string {
 	return sb.String()
 }
 
-// LoadHexCard reads a .hex file and returns a 40×24 RGB pixel grid.
+// LoadHexCard reads a .hex file from the embedded FS and returns a 40×24 RGB pixel grid.
 // Format: 40 lines, each with 24 comma-separated 6-char hex RGB values.
 func LoadHexCard(path string) ([40][24][3]uint8, error) {
 	var pixels [40][24][3]uint8
-	data, err := os.ReadFile(path)
+	data, err := decksFS.ReadFile(path)
 	if err != nil {
 		return pixels, err
 	}
@@ -246,10 +245,10 @@ func LoadHexCard(path string) ([40][24][3]uint8, error) {
 	return pixels, nil
 }
 
-// LoadHexFrame reads a .hex file with a 44×28 framed card (border included).
+// LoadHexFrame reads a .hex file from the embedded FS with a 44×28 framed card (border included).
 func LoadHexFrame(path string) ([44][28][3]uint8, error) {
 	var frame [44][28][3]uint8
-	data, err := os.ReadFile(path)
+	data, err := decksFS.ReadFile(path)
 	if err != nil {
 		return frame, err
 	}

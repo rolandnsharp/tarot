@@ -3,7 +3,7 @@ package main
 import (
 	"math"
 	"math/rand"
-	"path/filepath"
+	"path"
 	"time"
 )
 
@@ -59,7 +59,7 @@ func NewAnimState() AnimState {
 	}
 	dir := deckDir()
 	if dir != "" {
-		if pixels, err := LoadHexCard(filepath.Join(dir, "back.hex")); err == nil {
+		if pixels, err := LoadHexCard(path.Join(dir, "back.hex")); err == nil {
 			as.WashRGB = BuildRGBCardFrame(pixels, deckBorderColor())
 		}
 	}
