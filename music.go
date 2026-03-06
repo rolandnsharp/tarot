@@ -1,128 +1,51 @@
 package main
 
 import (
-	"math/rand"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
+	"bytes"
+	"io"
 	"sync"
+	"time"
 )
 
-// MusicPlayer manages background WAV playback via aplay.
+// MusicPlayer manages background procedural audio via Oto.
 type MusicPlayer struct {
 	mu      sync.Mutex
-	cmd     *exec.Cmd
-	stopCh  chan struct{}
-	running bool
+	player  *otoPlayer
+	playing bool
 }
 
-// findDir locates a named directory relative to the executable,
-// then falls back to the working directory.
-func findDir(name string) string {
-	if exe, err := os.Executable(); err == nil {
-		dir := filepath.Join(filepath.Dir(exe), name)
-		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			return dir
-		}
-	}
-	return name
+// otoPlayer wraps an Oto player and keeps references to the synth
+// readers so they aren't garbage collected while playing.
+type otoPlayer struct {
+	closer io.Closer
 }
 
-// PlaySFX plays a one-shot sound effect from the sounds/ directory.
-// Silently does nothing if aplay or the file is not found.
-func PlaySFX(name string) {
-	aplayPath, err := exec.LookPath("aplay")
-	if err != nil {
-		return
+func (o *otoPlayer) Close() {
+	if o.closer != nil {
+		o.closer.Close()
 	}
-	path := filepath.Join(findDir("sounds"), name)
-	if _, err := os.Stat(path); err != nil {
-		return
-	}
-	cmd := exec.Command(aplayPath, "-q", path)
-	cmd.Stderr = nil
-	cmd.Stdout = nil
-	go cmd.Run()
 }
 
-func findMusicDir() string {
-	return findDir("music")
-}
-
-// pickRandomTrack returns the full path to a random .wav file in the music dir.
-func pickRandomTrack() string {
-	dir := findMusicDir()
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return ""
-	}
-	var wavs []string
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(strings.ToLower(e.Name()), ".wav") {
-			wavs = append(wavs, filepath.Join(dir, e.Name()))
-		}
-	}
-	if len(wavs) == 0 {
-		return ""
-	}
-	return wavs[rand.Intn(len(wavs))]
-}
-
-// Play picks a random track and loops it in the background.
-// Silently does nothing if aplay is not found or no music files exist.
-func (p *MusicPlayer) Play() {
+// Play starts procedural ambient music voiced for the given deck.
+func (p *MusicPlayer) Play(deck string) {
 	p.Stop()
 
-	track := pickRandomTrack()
-	if track == "" {
+	if otoCtx == nil {
 		return
 	}
 
-	aplayPath, err := exec.LookPath("aplay")
-	if err != nil {
-		return
-	}
+	voice := voiceForDeck(deck)
+	drone := newDroneReader(voice)
+	melody := newMelodyReader(drone.rootFreq(), voice)
+	mix := newMixReader(drone, melody)
+
+	player := otoCtx.NewPlayer(mix)
+	player.Play()
 
 	p.mu.Lock()
-	p.stopCh = make(chan struct{})
-	p.running = true
-	stopCh := p.stopCh
+	p.player = &otoPlayer{closer: player}
+	p.playing = true
 	p.mu.Unlock()
-
-	go func() {
-		for {
-			select {
-			case <-stopCh:
-				return
-			default:
-			}
-
-			cmd := exec.Command(aplayPath, "-q", track)
-			cmd.Stderr = nil
-			cmd.Stdout = nil
-
-			p.mu.Lock()
-			p.cmd = cmd
-			p.mu.Unlock()
-
-			if err := cmd.Start(); err != nil {
-				return
-			}
-
-			done := make(chan error, 1)
-			go func() { done <- cmd.Wait() }()
-
-			select {
-			case <-stopCh:
-				cmd.Process.Kill()
-				<-done
-				return
-			case <-done:
-				// Track finished, loop again
-			}
-		}
-	}()
 }
 
 // Stop halts any current playback.
@@ -130,15 +53,59 @@ func (p *MusicPlayer) Stop() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if !p.running {
+	if !p.playing {
 		return
 	}
 
-	close(p.stopCh)
-	p.running = false
-
-	if p.cmd != nil && p.cmd.Process != nil {
-		p.cmd.Process.Kill()
-		p.cmd = nil
+	if p.player != nil {
+		p.player.Close()
+		p.player = nil
 	}
+	p.playing = false
+}
+
+// activeSFX tracks playing SFX players to prevent GC.
+var activeSFX struct {
+	mu      sync.Mutex
+	players []io.Closer
+}
+
+// PlaySFX plays a one-shot procedural sound effect.
+// Supported names: "card-flip", "paper-slide".
+func PlaySFX(name string) {
+	if otoCtx == nil {
+		return
+	}
+
+	data := cachedSFX(name)
+	if data == nil {
+		return
+	}
+
+	// Create a new bytes.Reader each time (each playback needs its own read position).
+	r := bytes.NewReader(data)
+
+	player := otoCtx.NewPlayer(r)
+	player.Play()
+
+	// Hold reference to prevent GC until done.
+	activeSFX.mu.Lock()
+	activeSFX.players = append(activeSFX.players, player)
+	activeSFX.mu.Unlock()
+
+	go func() {
+		// Wait until playback finishes.
+		for player.IsPlaying() {
+			time.Sleep(10 * time.Millisecond)
+		}
+		// Remove from active list.
+		activeSFX.mu.Lock()
+		for i, p := range activeSFX.players {
+			if p == player {
+				activeSFX.players = append(activeSFX.players[:i], activeSFX.players[i+1:]...)
+				break
+			}
+		}
+		activeSFX.mu.Unlock()
+	}()
 }

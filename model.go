@@ -61,10 +61,11 @@ func initialModel() model {
 			ActiveDeck = decks[rand.Intn(len(decks))]
 		}
 	}
+	initAudio()
 	anim := NewAnimState()
 	anim.Phase = PhaseQuestion
 	mp := &MusicPlayer{}
-	mp.Play()
+	mp.Play(ActiveDeck)
 	return model{
 		cards:     DrawThree(),
 		anim:      anim,
@@ -106,7 +107,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.question = m.textInput.Value()
 				m.readingEpoch++
 				m.anim.Start()
-				PlaySFX("sliding-paper.wav")
+				PlaySFX("paper-slide")
 				cmds := []tea.Cmd{tickCmd()}
 				if m.config != nil {
 					m.readingCh = startReading(*m.config, m.cards, m.question)
@@ -133,13 +134,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "r":
-			m.music.Play() // new random track
 			// Random deck if none pinned in config
 			if m.config == nil || m.config.Deck == "" {
 				if decks := ListDecks(); len(decks) > 0 {
 					ActiveDeck = decks[rand.Intn(len(decks))]
 				}
 			}
+			m.music.Play(ActiveDeck) // new deck-voiced track
 			// Reshuffle and reset reading
 			m.cards = DrawThree()
 			m.anim = NewAnimState()
@@ -173,10 +174,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		prevShown := m.anim.CardsShown
 		m.anim.Tick()
 		if m.anim.CardsDealt > prevDealt {
-			PlaySFX("240776__f4ngy__card-flip.wav")
+			PlaySFX("card-flip")
 		}
 		if m.anim.CardsShown > prevShown {
-			PlaySFX("240776__f4ngy__card-flip.wav")
+			PlaySFX("card-flip")
 		}
 		if m.anim.Phase == PhaseDisplay && m.config != nil {
 			m.anim.Phase = PhaseReading

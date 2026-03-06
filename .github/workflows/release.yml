@@ -34,10 +34,15 @@ jobs:
         with:
           go-version: '1.24'
 
+      - name: Install audio dependencies (Linux)
+        if: matrix.goos == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
       - name: Build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: ${{ matrix.goos == 'linux' && '1' || '0' }}
         run: |
           EXT=""
           if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
@@ -53,7 +58,7 @@ jobs:
             cp tarot "$ARCHIVE/"
           fi
           cp README.md tarot.md "$ARCHIVE/"
-          cp -r decks sounds music "$ARCHIVE/"
+          cp -r decks "$ARCHIVE/"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             zip -r "$ARCHIVE.zip" "$ARCHIVE"
           else

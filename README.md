@@ -14,7 +14,7 @@ cd tarot-*/
 ./tarot
 ```
 
-The archive includes the binary, card decks, sounds, and music — no Go installation needed.
+The archive includes the binary and card decks — no Go installation needed.
 
 ### Build from Source
 
@@ -75,7 +75,7 @@ api_key: unused
 
 - **Interpreter** — custom personality for the reader. When left blank, the deck itself sets the tone (each deck has a built-in voice — the cyberpunk deck reads like a neon-lit street oracle, the gothic deck speaks like light through cathedral glass, etc). Add text here to override with your own personality.
 - **Querent** — context about who's being read (make it personal or keep it generic)
-- **Deck** — `cyberpunk`, `nouveau`, or `gothic`
+- **Deck** — `cyberpunk`, `nouveau`, `gothic`, `plotinus`, `ukiyoe`, or `aztec`
 - **Connection** — works with any OpenAI-compatible API (Ollama, OpenAI, OpenRouter, etc)
 
 ### Using Other Providers
@@ -99,27 +99,21 @@ api_key: your-key
 
 The shuffle draws from real-world entropy. Go's runtime seeds its PRNG from the operating system's cryptographic entropy pool at startup — on Linux this is `getrandom`, fed by hardware interrupt timing, thermal noise, and disk jitter. Every launch produces a unique, unreproducible shuffle without any manual seeding. The cards are sorted by the chaos of the physical world.
 
-## Music
+## Audio
 
-Place `.wav` files in a `music/` directory next to the binary. A random track will loop during each reading. Requires `aplay` (part of `alsa-utils`) for audio playback. If `aplay` is not available or the directory is missing, the app runs silently.
+All music and sound effects are algorithmically generated in real time — no sample files needed. Each deck has its own sonic signature: the cyberpunk deck buzzes with dense, fast electronics; the gothic deck drones like a stone cathedral; the ukiyo-e deck floats on sparse Japanese pentatonic intervals; and so on.
 
-```bash
-sudo apt install alsa-utils  # Debian/Ubuntu
-```
+Audio requires a terminal that supports PCM output. Most modern setups work out of the box:
 
-### Included Tracks
+- **Linux** — PulseAudio, PipeWire, or ALSA
+- **macOS** — CoreAudio (works natively)
+- **Windows** — WASAPI (works natively)
 
-- [Luminis](https://freesound.org/s/722399/) by Vrymaa — CC0
-- [Mystical Guitar Atmosphere](https://freesound.org/s/719441/) by MichiJung — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-- [Somnium](https://freesound.org/s/722400/) by Vrymaa — [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
-
-## Sound Effects
-
-- [Card Flip](https://freesound.org/s/240776/) by f4ngy — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-- [Sliding Paper on Table](https://freesound.org/s/46631/) by 123jorre456 — CC0
+If audio output isn't available, the app runs silently.
 
 ## Controls
 
 - **Enter** — begin the reading
+- **Space** — pause / resume the oracle's reading
 - **r** — reshuffle and start over
 - **q** / **Esc** — quit
