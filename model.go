@@ -302,10 +302,8 @@ func (m model) renderQuestion() string {
 		PaddingTop(1).PaddingBottom(4).Render(inputBox)
 
 	back := GetCardBack()
-	gap := "   "
-	backs := lipgloss.JoinHorizontal(lipgloss.Top, back, gap, back, gap, back)
 
-	return padded + "\n" + lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, backs)
+	return padded + "\n" + lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, back)
 }
 
 func (m model) renderShuffle() string {

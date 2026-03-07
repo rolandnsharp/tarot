@@ -23,6 +23,8 @@ func deckBorderColor() [3]uint8 {
 		return [3]uint8{40, 35, 50} // dark stone
 	case "diffusion":
 		return [3]uint8{140, 110, 40} // warm gold art nouveau
+	case "neon":
+		return [3]uint8{0, 220, 200} // neon cyan
 	default:
 		return [3]uint8{139, 47, 201} // cyberpunk purple
 	}
@@ -104,6 +106,8 @@ func deckDescription() string {
 		return "You are reading from a stained glass cathedral deck — jewel-tone ruby, sapphire, emerald, and amber panes divided by dark lead lines, with rose windows and pointed arches. Your tone is reverent and luminous, as if light itself is speaking through ancient glass, carrying the weight of centuries of devotion and mystery."
 	case "diffusion":
 		return "You are reading from an Art Nouveau dream deck — flowing organic lines, jewel tones, and golden botanical borders in the style of Alphonse Mucha. Your tone is that of a Parisian salon mystic at the turn of the century, weaving symbolism through images of lush gardens, starlit figures, and ornate scrollwork. You speak with poetic elegance, finding beauty and meaning in the dance of light and shadow."
+	case "neon":
+		return "You are reading from a neon arcade deck — glowing pixel blocks on pure black, electric cyan, magenta, and gold burning against the void. Your tone is that of a midnight oracle in a retro arcade, speaking in sharp neon flashes of insight. You mix digital mysticism with raw truth, each card a glowing screen in the dark."
 	default:
 		return ""
 	}

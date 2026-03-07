@@ -63,6 +63,20 @@ func deckTheme() DeckTheme {
 			InputBg:     "#1a1208",
 			Placeholder: "ask the dream cards what visions they hold ...",
 		}
+	case "neon":
+		return DeckTheme{
+			Background:  "#020208",
+			Title:       "#00dcc8",
+			Subtitle:    "#ff00aa",
+			Text:        "#00ffcc",
+			Help:        "#0088aa",
+			Hint:        "#00aa88",
+			Error:       "#ff2060",
+			InputText:   "#00ffcc",
+			InputDim:    "#005544",
+			InputBg:     "#080810",
+			Placeholder: "query the neon grid ...",
+		}
 	default: // cyberpunk
 		return DeckTheme{
 			Background:  "#0a0510",

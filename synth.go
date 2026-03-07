@@ -107,6 +107,18 @@ var deckVoices = map[string]deckVoice{
 		decayMs:    1500,
 		melodyVol:  0.10,
 	},
+	"neon": {
+		roots:      []float64{55.0, 82.41}, // A1, E2
+		harmonics:  [][2]float64{{1, 0.12}, {2, 0.10}, {3, 0.06}, {5, 0.03}},
+		lfoRate:    0.12,
+		lfoDepth:   0.25,
+		scale:      []int{0, 3, 5, 7, 10, 12, 15},
+		noteGapMin: 1,
+		noteGapMax: 3,
+		attackMs:   80,
+		decayMs:    600,
+		melodyVol:  0.10,
+	},
 }
 
 func voiceForDeck(deck string) deckVoice {
