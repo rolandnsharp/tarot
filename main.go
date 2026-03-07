@@ -14,11 +14,13 @@ func main() {
 	flag.BoolVar(&silentMode, "silent", false, "disable all audio")
 	flag.Parse()
 
-	// Set terminal background to dark purple and hide scrollbar
-	fmt.Fprint(os.Stdout, "\033]11;#0a0510\a\033[?30l")
+	m := initialModel()
+
+	// Set terminal background based on active deck and hide scrollbar
+	fmt.Fprintf(os.Stdout, "\033]11;%s\a\033[?30l", deckTheme().Background)
 
 	p := tea.NewProgram(
-		initialModel(),
+		m,
 		tea.WithAltScreen(),
 	)
 	_, err := p.Run()

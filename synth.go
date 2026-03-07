@@ -107,42 +107,6 @@ var deckVoices = map[string]deckVoice{
 		decayMs:    1500,
 		melodyVol:  0.10,
 	},
-	"plotinus": {
-		roots:      []float64{73.42, 110.0}, // D2, A2
-		harmonics:  [][2]float64{{1, 0.15}, {2, 0.08}, {1.5, 0.06}},
-		lfoRate:    0.08,
-		lfoDepth:   0.2,
-		scale:      []int{0, 2, 7, 12, 14, 19},
-		noteGapMin: 2,
-		noteGapMax: 4,
-		attackMs:   200,
-		decayMs:    900,
-		melodyVol:  0.12,
-	},
-	"ukiyoe": {
-		roots:      []float64{82.41, 110.0}, // E2, A2
-		harmonics:  [][2]float64{{1, 0.15}, {2, 0.08}},
-		lfoRate:    0.06,
-		lfoDepth:   0.18,
-		scale:      []int{0, 1, 5, 7, 8, 12, 13},
-		noteGapMin: 2,
-		noteGapMax: 5,
-		attackMs:   300,
-		decayMs:    800,
-		melodyVol:  0.10,
-	},
-	"aztec": {
-		roots:      []float64{73.42, 98.0}, // D2, G2
-		harmonics:  [][2]float64{{1, 0.15}, {2, 0.08}, {1.498, 0.06}, {3.01, 0.04}},
-		lfoRate:    0.08,
-		lfoDepth:   0.2,
-		scale:      []int{0, 3, 5, 7, 10, 12, 15},
-		noteGapMin: 2,
-		noteGapMax: 5,
-		attackMs:   200,
-		decayMs:    800,
-		melodyVol:  0.11,
-	},
 }
 
 func voiceForDeck(deck string) deckVoice {

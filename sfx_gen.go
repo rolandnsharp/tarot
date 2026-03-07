@@ -82,31 +82,29 @@ func newPaperSlideSound() *bytes.Reader {
 	return renderSamples(samples)
 }
 
-// newWordChimeSound generates a ~60ms tonal ping tuned to a harmonic of the given root.
+// newWordChimeSound generates a ~35ms soft tonal tick tuned to a harmonic of the given root.
 func newWordChimeSound(root float64) *bytes.Reader {
-	n := int(0.06 * sampleRate)
+	n := int(0.035 * sampleRate)
 	samples := make([]int16, n)
-	// Target ~400-800 Hz for an audible bell-like chime regardless of root.
-	// Pick the lowest harmonic that lands at or above 400 Hz.
-	harm := math.Ceil(400.0 / root)
-	if rand.Intn(3) == 0 {
+	// Target ~500-900 Hz for a soft, high tick.
+	harm := math.Ceil(500.0 / root)
+	if rand.Intn(4) == 0 {
 		harm += 1.0 // occasional higher ping for variety
 	}
-	freq := root * harm * (1.0 + (rand.Float64()-0.5)*0.02) // +/- 1% detune
+	freq := root * harm * (1.0 + (rand.Float64()-0.5)*0.01) // +/- 0.5% detune
 	for i := range samples {
 		t := float64(i) / float64(n)
-		// Fast attack (5ms), smooth exponential decay
+		// Fast attack (3ms), steep exponential decay
 		var env float64
-		attackT := 0.08 // 5ms / 60ms ≈ 0.08
+		attackT := 0.08
 		if t < attackT {
 			env = t / attackT
 		} else {
-			// Exponential decay for natural ring-out
-			env = math.Exp(-6.0 * (t - attackT))
+			env = math.Exp(-10.0 * (t - attackT))
 		}
 
 		tSec := float64(i) / float64(sampleRate)
-		val := math.Sin(2*math.Pi*freq*tSec) * env * 0.10
+		val := math.Sin(2*math.Pi*freq*tSec) * env * 0.04
 		samples[i] = int16(val * 32767)
 	}
 	return renderSamples(samples)

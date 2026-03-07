@@ -39,14 +39,15 @@ type model struct {
 }
 
 func newTextInput() textinput.Model {
+	theme := deckTheme()
 	ti := textinput.New()
-	ti.Placeholder = "ask the cards a question ... or don't ..."
+	ti.Placeholder = theme.Placeholder
 	ti.CharLimit = 200
-	ti.Width = 50
-	ti.TextStyle = lipgloss.NewStyle().Foreground(colorLavender)
-	ti.PromptStyle = lipgloss.NewStyle().Foreground(colorLavender)
-	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#6b5b7b"))
-	ti.Cursor.Style = lipgloss.NewStyle().Foreground(colorLavender)
+	ti.Width = len(theme.Placeholder) + 2
+	ti.TextStyle = lipgloss.NewStyle().Foreground(theme.InputText).Background(theme.InputBg)
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(theme.InputText).Background(theme.InputBg)
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(theme.InputDim).Background(theme.InputBg)
+	ti.Cursor.Style = lipgloss.NewStyle().Foreground(theme.InputText).Background(theme.InputBg)
 	ti.Focus() // sets focus state; cmd discarded (cursor won't blink but input works)
 	return ti
 }
@@ -263,7 +264,7 @@ func (m model) View() string {
 	}
 
 	if m.anim.Phase == PhaseDisplay && m.config == nil {
-		hint := configHintStyle.Width(m.width).Render("Add a tarot.md file to enable AI readings")
+		hint := configHintStyle().Width(m.width).Render("Add a tarot.md file to enable AI readings")
 		s.WriteString("\n" + hint)
 	}
 
@@ -278,10 +279,10 @@ func (m model) View() string {
 		} else {
 			helpText = "r reshuffle · q quit"
 		}
-		help := helpStyle.Width(m.width).Render(helpText)
+		help := helpStyle().Width(m.width).Render(helpText)
 		s.WriteString("\n\n" + help)
 	} else if m.anim.Phase == PhaseDisplay {
-		help := helpStyle.Width(m.width).Render("r reshuffle · q quit")
+		help := helpStyle().Width(m.width).Render("r reshuffle · q quit")
 		s.WriteString("\n\n" + help)
 	}
 
@@ -295,9 +296,16 @@ func (m model) renderIdle() string {
 
 func (m model) renderQuestion() string {
 	input := m.textInput.View()
-	// Fixed-width box prevents centering shift when placeholder disappears
-	box := lipgloss.NewStyle().Width(m.textInput.Width + lipgloss.Width(m.textInput.Prompt)).Render(input)
-	return lipgloss.Place(m.width, 6, lipgloss.Center, lipgloss.Center, box)
+	w := m.textInput.Width + 2 // +2 for "> " prompt
+	inputBox := lipgloss.NewStyle().Width(w).MaxHeight(1).Render(input)
+	padded := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).
+		PaddingTop(1).PaddingBottom(4).Render(inputBox)
+
+	back := GetCardBack()
+	gap := "   "
+	backs := lipgloss.JoinHorizontal(lipgloss.Top, back, gap, back, gap, back)
+
+	return padded + "\n" + lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, backs)
 }
 
 func (m model) renderShuffle() string {
@@ -326,15 +334,20 @@ func (m model) renderShuffleRGB(bufW, bufH int) string {
 	}
 
 	grid := m.anim.WashRGB
+	gridH := len(grid)
+	gridW := 0
+	if gridH > 0 {
+		gridW = len(grid[0])
+	}
 	for _, wc := range m.anim.WashCards {
 		sx := int(wc.X)
 		sy := int(wc.Y)
-		for py := 0; py < 44; py++ {
+		for py := 0; py < gridH; py++ {
 			dy := sy + py
 			if dy < 0 || dy >= bufH {
 				continue
 			}
-			for px := 0; px < 28; px++ {
+			for px := 0; px < gridW; px++ {
 				dx := sx + px
 				if dx < 0 || dx >= bufW {
 					continue
@@ -353,8 +366,11 @@ func (m model) renderShuffleRGB(bufW, bufH int) string {
 func (m model) renderCards() string {
 	var cardViews [3]string
 
-	// Card width is 28 chars (pixel art width)
-	cardW := 28
+	// Card width from the card back frame
+	cardW := 28 // default
+	if len(m.anim.WashRGB) > 0 && len(m.anim.WashRGB[0]) > 0 {
+		cardW = len(m.anim.WashRGB[0])
+	}
 
 	for i := 0; i < 3; i++ {
 		if !m.anim.CardVisible(i) {
@@ -380,14 +396,14 @@ func (m model) renderCards() string {
 
 func (m model) renderReading() string {
 	if m.readingErr != nil {
-		wait := readingWaitStyle.Width(m.width).Render("✦ The oracle is silent ✦")
-		errMsg := readingErrStyle.Width(m.width).Render(m.readingErr.Error())
+		wait := readingWaitStyle().Width(m.width).Render("✦ The oracle is silent ✦")
+		errMsg := readingErrStyle().Width(m.width).Render(m.readingErr.Error())
 		return wait + "\n" + errMsg
 	}
 
 	text := m.readingText
 	if text == "" && m.readingBuffer == "" {
-		return readingWaitStyle.Width(m.width).Render("✦ Consulting the oracle... ✦")
+		return readingWaitStyle().Width(m.width).Render("✦ Consulting the oracle... ✦")
 	}
 	if text == "" {
 		return ""
@@ -406,13 +422,13 @@ func (m model) renderReading() string {
 	// Add cursor if still revealing
 	if m.revealIndex < len(m.readingBuffer) || !m.readingDone {
 		if m.readingPaused {
-			wrapped += readingCursorStyle.Render("▮")
+			wrapped += readingCursorStyle().Render("▮")
 		} else {
-			wrapped += readingCursorStyle.Render("█")
+			wrapped += readingCursorStyle().Render("█")
 		}
 	}
 
-	rendered := readingStyle.Render(wrapped)
+	rendered := readingStyle().Render(wrapped)
 
 	// Auto-scroll: show only the last N lines that fit available height
 	// Reserve space for help text (2 lines)
