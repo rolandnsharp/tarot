@@ -66,6 +66,11 @@ func slugify(name string) string {
 	return b.String()
 }
 
+// hiddenDecks are kept on disk but excluded from random selection.
+var hiddenDecks = map[string]bool{
+	"ember": true,
+}
+
 // ListDecks returns names of available decks from the embedded filesystem.
 func ListDecks() []string {
 	var decks []string
@@ -74,7 +79,7 @@ func ListDecks() []string {
 		return nil
 	}
 	for _, e := range entries {
-		if e.IsDir() {
+		if e.IsDir() && !hiddenDecks[e.Name()] {
 			decks = append(decks, e.Name())
 		}
 	}

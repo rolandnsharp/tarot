@@ -44,7 +44,7 @@ func newTextInput() textinput.Model {
 	ti := textinput.New()
 	ti.Placeholder = theme.Placeholder
 	ti.CharLimit = 200
-	ti.Width = len(theme.Placeholder) + 2
+	ti.Width = 50
 	ti.TextStyle = lipgloss.NewStyle().Foreground(theme.InputText).Background(theme.InputBg)
 	ti.PromptStyle = lipgloss.NewStyle().Foreground(theme.InputText).Background(theme.InputBg)
 	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(theme.InputDim).Background(theme.InputBg)

@@ -33,7 +33,7 @@ func deckTheme() DeckTheme {
 			InputText:   "#f5e6d3",
 			InputDim:    "#7a6840",
 			InputBg:     "#251a0c",
-			Placeholder: "what beauty do you seek in the garden of fate ...",
+			Placeholder: "",
 		}
 	case "gothic":
 		return DeckTheme{
@@ -47,7 +47,7 @@ func deckTheme() DeckTheme {
 			InputText:   "#c8b8d8",
 			InputDim:    "#504868",
 			InputBg:     "#101018",
-			Placeholder: "speak your question into the stained glass dark ...",
+			Placeholder: "",
 		}
 	case "diffusion":
 		return DeckTheme{
@@ -61,7 +61,7 @@ func deckTheme() DeckTheme {
 			InputText:   "#f0e0c8",
 			InputDim:    "#7a6840",
 			InputBg:     "#1a1208",
-			Placeholder: "ask the dream cards what visions they hold ...",
+			Placeholder: "",
 		}
 	case "ember":
 		return DeckTheme{
@@ -75,7 +75,7 @@ func deckTheme() DeckTheme {
 			InputText:   "#e8c888",
 			InputDim:    "#604820",
 			InputBg:     "#140c06",
-			Placeholder: "whisper your question to the firelight ...",
+			Placeholder: "",
 		}
 	case "neon":
 		return DeckTheme{
@@ -89,7 +89,7 @@ func deckTheme() DeckTheme {
 			InputText:   "#00ffcc",
 			InputDim:    "#005544",
 			InputBg:     "#080810",
-			Placeholder: "query the neon grid ...",
+			Placeholder: "",
 		}
 	default: // cyberpunk
 		return DeckTheme{
@@ -103,7 +103,7 @@ func deckTheme() DeckTheme {
 			InputText:   "#e0d0f0",
 			InputDim:    "#6b5b7b",
 			InputBg:     "#110a1a",
-			Placeholder: "jack in and ask the neon oracle ...",
+			Placeholder: "",
 		}
 	}
 }
