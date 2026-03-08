@@ -1,0 +1,8 @@
+tarot
+animation
+venv/
+.ssh/
+*.png
+*.gif
+__pycache__/
+/tmp/

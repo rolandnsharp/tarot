@@ -107,6 +107,18 @@ var deckVoices = map[string]deckVoice{
 		decayMs:    1500,
 		melodyVol:  0.10,
 	},
+	"ember": {
+		roots:      []float64{65.41, 87.31}, // C2, F2
+		harmonics:  [][2]float64{{1, 0.15}, {2, 0.10}, {3, 0.05}, {1.5, 0.04}},
+		lfoRate:    0.05,
+		lfoDepth:   0.18,
+		scale:      []int{0, 2, 4, 7, 9, 12, 14},
+		noteGapMin: 3,
+		noteGapMax: 6,
+		attackMs:   250,
+		decayMs:    1200,
+		melodyVol:  0.10,
+	},
 	"neon": {
 		roots:      []float64{55.0, 82.41}, // A1, E2
 		harmonics:  [][2]float64{{1, 0.12}, {2, 0.10}, {3, 0.06}, {5, 0.03}},

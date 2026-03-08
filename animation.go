@@ -47,7 +47,7 @@ type AnimState struct {
 
 	// Wash shuffle
 	WashCards   []WashCard
-	WashRGB     [44][28][3]uint8 // card back pixel grid (RGB mode)
+	WashRGB     [][]RGB3 // card back pixel grid (RGB mode)
 	ScreenW     int         // terminal columns (= pixel width)
 	ScreenH     int         // terminal rows
 }

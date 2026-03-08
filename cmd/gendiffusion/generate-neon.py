@@ -14,9 +14,10 @@ from diffusers import AutoPipelineForText2Image
 from PIL import Image
 
 STYLE = (
-    "low resolution block art, neon colors on black background, "
-    "high contrast, bold solid shapes, dark background bright foreground, "
-    "simple composition, retro game aesthetic, pixel block art"
+    "glowing neon art on pure black background, electric cyan electric magenta electric green hot pink, "
+    "extremely high contrast, bright vivid saturated neon glow against pitch black void, "
+    "bold simple flat shapes, blacklight poster, fluorescent colors, synthwave, "
+    "no brown no beige no earth tones, only neon and black"
 )
 
 MAJOR_ARCANA = [
@@ -83,8 +84,8 @@ def generate_card(pipe, prompt, hex_path):
     full_prompt = f"{prompt}, {STYLE}"
     image = pipe(
         prompt=full_prompt,
-        num_inference_steps=4,
-        guidance_scale=0.0,
+        num_inference_steps=20,
+        guidance_scale=4.0,
         width=512,
         height=768,
     ).images[0]

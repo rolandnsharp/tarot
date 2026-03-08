@@ -63,6 +63,20 @@ func deckTheme() DeckTheme {
 			InputBg:     "#1a1208",
 			Placeholder: "ask the dream cards what visions they hold ...",
 		}
+	case "ember":
+		return DeckTheme{
+			Background:  "#0a0604",
+			Title:       "#e8a020",
+			Subtitle:    "#c06020",
+			Text:        "#e8c888",
+			Help:        "#906828",
+			Hint:        "#c0a060",
+			Error:       "#c04020",
+			InputText:   "#e8c888",
+			InputDim:    "#604820",
+			InputBg:     "#140c06",
+			Placeholder: "whisper your question to the firelight ...",
+		}
 	case "neon":
 		return DeckTheme{
 			Background:  "#020208",

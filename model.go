@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
 	"strings"
@@ -238,11 +239,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.quitting {
-		return ""
+		return fmt.Sprintf("\033]111\a\033[?30h")
 	}
 
 	var s strings.Builder
 
+	// Set terminal background (works over SSH too)
+	s.WriteString(fmt.Sprintf("\033]11;%s\a", deckTheme().Background))
 	s.WriteString("\n\n")
 
 	switch m.anim.Phase {

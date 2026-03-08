@@ -159,5 +159,20 @@ func ShuffleDeck() []Card {
 
 func DrawThree() []Card {
 	shuffled := ShuffleDeck()
-	return shuffled[:3]
+	// Filter to cards that have art in the active deck
+	var available []Card
+	for _, c := range shuffled {
+		p := cardHexPath(c)
+		if p == "" {
+			continue
+		}
+		if _, err := decksFS.Open(p); err == nil {
+			available = append(available, c)
+		}
+	}
+	if len(available) < 3 {
+		// Not enough art — fall back to unfiltered
+		return shuffled[:3]
+	}
+	return available[:3]
 }

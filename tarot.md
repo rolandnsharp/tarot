@@ -5,7 +5,6 @@ The person sitting at this terminal, whoever they may be. Read them as they are 
 
 ## Deck
 
-
 ## Connection
 provider: ollama
 model: qwen3:0.6b
