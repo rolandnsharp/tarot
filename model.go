@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type tickMsg time.Time
-type typewriterMsg time.Time
+type typewriterMsg int // generation; stale ticks from an old chain are ignored
 
 type model struct {
 	cards    []Card
@@ -35,8 +35,15 @@ type model struct {
 	revealIndex   int    // how many bytes of buffer are revealed
 	readingDone   bool
 	readingErr    error
-	readingEpoch   int  // incremented on each new reading to ignore stale messages
-	readingPaused  bool // spacebar pause during typewriter reveal
+	readingEpoch  int // incremented on each new reading to ignore stale messages
+
+	// Pages: the reading is shown a page at a time under the cards, so text never
+	// scrolls away. A full page waits for space; earlier pages can be revisited.
+	pageStart   int   // byte index in readingBuffer where the current page starts
+	pageHistory []int // start indices of earlier pages
+	pageFull    bool  // current page has no room for the next word
+	viewPage    int   // -1 = current page, otherwise index into pageHistory
+	twGen       int   // typewriter tick-chain generation
 }
 
 func newTextInput() textinput.Model {
@@ -85,10 +92,87 @@ func tickCmd() tea.Cmd {
 
 const typewriterInterval = 150 * time.Millisecond // ~200 wpm speaking pace
 
-func typewriterCmd() tea.Cmd {
-	return tea.Tick(typewriterInterval, func(t time.Time) tea.Msg {
-		return typewriterMsg(t)
+func typewriterCmd(gen int) tea.Cmd {
+	return tea.Tick(typewriterInterval, func(time.Time) tea.Msg {
+		return typewriterMsg(gen)
 	})
+}
+
+// startTypewriter begins a new tick chain; any older chain dies at its next tick.
+func (m *model) startTypewriter() tea.Cmd {
+	m.twGen++
+	return typewriterCmd(m.twGen)
+}
+
+// nextWordEnd returns the end of the word after index i (leading spaces skipped).
+func (m model) nextWordEnd(i int) int {
+	b := m.readingBuffer
+	for i < len(b) && b[i] == ' ' {
+		i++
+	}
+	for i < len(b) && b[i] != ' ' {
+		i++
+	}
+	return i
+}
+
+func (m model) readingWrapW() int {
+	w := 80
+	if m.width-4 < w {
+		w = m.width - 4
+	}
+	if w < 20 {
+		w = 20
+	}
+	return w
+}
+
+// readingAvailH is the number of text lines that fit under the cards.
+func (m model) readingAvailH() int {
+	h := m.height - 30
+	if h < 4 {
+		h = 4
+	}
+	return h
+}
+
+func pageText(s string) string { return strings.TrimLeft(s, " \n") }
+
+// fits reports whether the current page, revealed up to end, fits the text area.
+func (m model) fits(end int) bool {
+	text := pageText(m.readingBuffer[m.pageStart:end])
+	return strings.Count(wordWrap(text, m.readingWrapW()), "\n")+1 <= m.readingAvailH()
+}
+
+// revealing reports whether the current page is still being typed out.
+func (m model) revealing() bool {
+	return !m.pageFull && (m.revealIndex < len(m.readingBuffer) || !m.readingDone)
+}
+
+// turnPage starts a new page at the first word not yet shown.
+func (m *model) turnPage() tea.Cmd {
+	m.pageHistory = append(m.pageHistory, m.pageStart)
+	i := m.revealIndex
+	for i < len(m.readingBuffer) && (m.readingBuffer[i] == ' ' || m.readingBuffer[i] == '\n') {
+		i++
+	}
+	m.pageStart, m.revealIndex = i, i
+	m.readingText = ""
+	m.pageFull = false
+	return m.startTypewriter()
+}
+
+// revealPage shows at once as much buffered text as fits on the current page.
+func (m *model) revealPage() {
+	for m.revealIndex < len(m.readingBuffer) {
+		next := m.nextWordEnd(m.revealIndex)
+		if !m.fits(next) && m.revealIndex > m.pageStart {
+			m.pageFull = true
+			break
+		}
+		m.revealIndex = next
+	}
+	m.readingText = m.readingBuffer[m.pageStart:m.revealIndex]
 }
 
 func (m model) Init() tea.Cmd {
@@ -127,11 +211,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.music.Stop()
 			m.quitting = true
 			return m, tea.Quit
-		case " ":
+		case " ", "enter", "pgdown":
 			if m.anim.Phase == PhaseReading {
-				m.readingPaused = !m.readingPaused
-				if !m.readingPaused && (m.revealIndex < len(m.readingBuffer) || !m.readingDone) {
-					return m, typewriterCmd()
+				switch {
+				case m.viewPage >= 0: // back on an earlier page: return to the current one
+					m.viewPage = -1
+				case m.pageFull:
+					return m, m.turnPage()
+				case m.revealing():
+					m.revealPage() // fast readers: show the rest of this page now
+				}
+				return m, nil
+			}
+		case "left", "b", "pgup":
+			if m.anim.Phase == PhaseReading {
+				if m.viewPage < 0 && len(m.pageHistory) > 0 {
+					m.viewPage = len(m.pageHistory) - 1
+				} else if m.viewPage > 0 {
+					m.viewPage--
+				}
+				return m, nil
+			}
+		case "right", "f":
+			if m.anim.Phase == PhaseReading && m.viewPage >= 0 {
+				m.viewPage++
+				if m.viewPage >= len(m.pageHistory) {
+					m.viewPage = -1
 				}
 				return m, nil
 			}
@@ -157,7 +262,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.revealIndex = 0
 			m.readingDone = false
 			m.readingErr = nil
-			m.readingPaused = false
+			m.pageStart, m.pageHistory, m.pageFull, m.viewPage = 0, nil, false, -1
+			m.twGen++ // stop the old reading's typewriter
 			return m, nil
 		}
 
@@ -183,7 +289,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.anim.Phase == PhaseDisplay && m.config != nil {
 			m.anim.Phase = PhaseReading
-			return m, typewriterCmd()
+			m.viewPage = -1
+			return m, m.startTypewriter()
 		}
 		if m.anim.Phase == PhaseDisplay {
 			return m, nil
@@ -191,30 +298,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tickCmd()
 
 	case typewriterMsg:
-		if m.readingPaused {
-			return m, nil
+		if int(msg) != m.twGen || m.pageFull {
+			return m, nil // stale chain, or the page is full and waits for space
 		}
 		if m.revealIndex < len(m.readingBuffer) {
-			// Skip any leading whitespace, then advance to end of next word
-			i := m.revealIndex
-			for i < len(m.readingBuffer) && m.readingBuffer[i] == ' ' {
-				i++
+			next := m.nextWordEnd(m.revealIndex)
+			if !m.fits(next) && m.revealIndex > m.pageStart {
+				m.pageFull = true
+				return m, nil
 			}
-			for i < len(m.readingBuffer) && m.readingBuffer[i] != ' ' {
-				i++
-			}
-			m.revealIndex = i
-			m.readingText = m.readingBuffer[:m.revealIndex]
+			m.revealIndex = next
+			m.readingText = m.readingBuffer[m.pageStart:m.revealIndex]
 			PlayWordChime(ActiveDeck)
-			return m, typewriterCmd()
+			return m, typewriterCmd(m.twGen)
 		}
 		if !m.readingDone {
 			// Buffer exhausted, wait for more from LLM
-			return m, typewriterCmd()
+			return m, typewriterCmd(m.twGen)
 		}
-		// All text revealed
-		m.readingText = m.readingBuffer
-		return m, nil
+		return m, nil // all text revealed
 
 	case streamResult:
 		if msg.epoch != m.readingEpoch {
@@ -273,14 +375,23 @@ func (m model) View() string {
 
 	// Show help hint during reading or when cards displayed without config
 	if m.anim.Phase == PhaseReading {
-		revealing := m.revealIndex < len(m.readingBuffer) || !m.readingDone
-		var helpText string
-		if revealing && m.readingPaused {
-			helpText = "space resume · r reshuffle · q quit"
-		} else if revealing {
-			helpText = "space pause · r reshuffle · q quit"
-		} else {
-			helpText = "r reshuffle · q quit"
+		var keys []string
+		page := len(m.pageHistory) + 1
+		if m.viewPage >= 0 {
+			page = m.viewPage + 1
+			keys = append(keys, "space current page")
+		} else if m.pageFull {
+			keys = append(keys, "space next page ▾")
+		} else if m.revealing() {
+			keys = append(keys, "space show page")
+		}
+		if (m.viewPage < 0 && len(m.pageHistory) > 0) || m.viewPage > 0 {
+			keys = append(keys, "← back")
+		}
+		keys = append(keys, "r reshuffle", "q quit")
+		helpText := strings.Join(keys, " · ")
+		if len(m.pageHistory) > 0 || m.pageFull {
+			helpText = fmt.Sprintf("page %d · %s", page, helpText)
 		}
 		help := helpStyle().Width(m.width).Render(helpText)
 		s.WriteString("\n\n" + help)
@@ -402,7 +513,15 @@ func (m model) renderReading() string {
 		return wait + "\n" + errMsg
 	}
 
-	text := m.readingText
+	text := pageText(m.readingText)
+	current := m.viewPage < 0
+	if !current {
+		end := m.pageStart
+		if m.viewPage+1 < len(m.pageHistory) {
+			end = m.pageHistory[m.viewPage+1]
+		}
+		text = pageText(m.readingBuffer[m.pageHistory[m.viewPage]:end])
+	}
 	if text == "" && m.readingBuffer == "" {
 		return readingWaitStyle().Width(m.width).Render("✦ Consulting the oracle... ✦")
 	}
@@ -410,36 +529,19 @@ func (m model) renderReading() string {
 		return ""
 	}
 
-	// Word-wrap to a comfortable width
-	wrapW := 80
-	if m.width-4 < wrapW {
-		wrapW = m.width - 4
-	}
-	if wrapW < 20 {
-		wrapW = 20
-	}
-	wrapped := wordWrap(text, wrapW)
+	wrapped := wordWrap(text, m.readingWrapW())
 
-	// Add cursor if still revealing
-	if m.revealIndex < len(m.readingBuffer) || !m.readingDone {
-		if m.readingPaused {
-			wrapped += readingCursorStyle().Render("▮")
-		} else {
-			wrapped += readingCursorStyle().Render("█")
-		}
+	// Cursor while this page is still being typed out
+	if current && m.revealing() {
+		wrapped += readingCursorStyle().Render("█")
 	}
 
 	rendered := readingStyle().Render(wrapped)
 
-	// Auto-scroll: show only the last N lines that fit available height
-	// Reserve space for help text (2 lines)
-	availH := m.height - 30
-	if availH < 4 {
-		availH = 4
-	}
+	// Pages are sized to fit; after a resize, clip rather than scroll
 	lines := strings.Split(rendered, "\n")
-	if len(lines) > availH {
-		lines = lines[len(lines)-availH:]
+	if availH := m.readingAvailH(); len(lines) > availH {
+		lines = lines[:availH]
 	}
 
 	return lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, strings.Join(lines, "\n"))
