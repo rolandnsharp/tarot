@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/wish"
 	bm "github.com/charmbracelet/wish/bubbletea"
 	lm "github.com/charmbracelet/wish/logging"
+	"github.com/muesli/termenv"
 )
 
 var silentMode bool
@@ -60,13 +61,13 @@ func runServer(port string) {
 		wish.WithAddress(fmt.Sprintf(":%s", port)),
 		wish.WithHostKeyPath(keyPath),
 		wish.WithMiddleware(
-			bm.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
+			bm.MiddlewareWithProgramHandler(func(sess ssh.Session) *tea.Program {
 				pty, _, _ := sess.Pty()
 				m := initialModel()
 				m.width = pty.Window.Width
 				m.height = pty.Window.Height
-				return m, []tea.ProgramOption{tea.WithAltScreen()}
-			}),
+				return tea.NewProgram(m, append(bm.MakeOptions(sess), tea.WithAltScreen(), syncOutput(sess))...)
+			}, termenv.Ascii),
 			lm.Middleware(),
 		),
 	)
