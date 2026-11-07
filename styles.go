@@ -89,7 +89,7 @@ func deckTheme() DeckTheme {
 			InputText:   "#00ffcc",
 			InputDim:    "#005544",
 			InputBg:     "#080810",
-			Placeholder: "",
+			Placeholder: "query the neon grid ...",
 		}
 	default: // cyberpunk
 		return DeckTheme{

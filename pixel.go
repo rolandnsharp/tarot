@@ -18,6 +18,40 @@ func bgColor(r, g, b uint8) string {
 	return fmt.Sprintf("\033[48;2;%d;%d;%dm", r, g, b)
 }
 
+// xterm-256 colour cube levels; colours 16-231 are every combination of these.
+var cubeLevels = [6]uint8{0, 95, 135, 175, 215, 255}
+
+func cubeIndex(v uint8) int {
+	for i, l := range cubeLevels {
+		if l == v {
+			return i
+		}
+	}
+	return -1
+}
+
+// ansi256 returns the xterm-256 index that is exactly this colour, if there is one.
+func ansi256(c RGB3) (int, bool) {
+	r, g, b := cubeIndex(c[0]), cubeIndex(c[1]), cubeIndex(c[2])
+	if r >= 0 && g >= 0 && b >= 0 {
+		return 16 + 36*r + 6*g + b, true
+	}
+	if c[0] == c[1] && c[1] == c[2] && c[0] >= 8 && c[0] <= 238 && (c[0]-8)%10 == 0 {
+		return 232 + int(c[0]-8)/10, true
+	}
+	return 0, false
+}
+
+// colourCode writes the SGR code for a foreground (38) or background (48) colour,
+// using the short 256-colour form when the colour is exactly in that palette.
+func colourCode(sb *strings.Builder, layer int, c RGB3) {
+	if n, ok := ansi256(c); ok {
+		fmt.Fprintf(sb, "\x1b[%d;5;%dm", layer, n)
+		return
+	}
+	fmt.Fprintf(sb, "\x1b[%d;2;%d;%d;%dm", layer, c[0], c[1], c[2])
+}
+
 // BuildRGBCardFrame wraps an inner pixel grid in a frame with a 2px rounded border.
 func BuildRGBCardFrame(inner [][]RGB3, borderColor RGB3) [][]RGB3 {
 	innerH := len(inner)
@@ -65,16 +99,16 @@ func renderHalfBlock(sb *strings.Builder, top, bot RGB3) {
 	if topTransparent && botTransparent {
 		sb.WriteString(" ")
 	} else if topTransparent {
-		sb.WriteString(fgColor(bot[0], bot[1], bot[2]))
+		colourCode(sb, 38, bot)
 		sb.WriteString("▄")
 		sb.WriteString(resetCode)
 	} else if botTransparent {
-		sb.WriteString(fgColor(top[0], top[1], top[2]))
+		colourCode(sb, 38, top)
 		sb.WriteString("▀")
 		sb.WriteString(resetCode)
 	} else {
-		sb.WriteString(fgColor(top[0], top[1], top[2]))
-		sb.WriteString(bgColor(bot[0], bot[1], bot[2]))
+		colourCode(sb, 38, top)
+		colourCode(sb, 48, bot)
 		sb.WriteString("▀")
 		sb.WriteString(resetCode)
 	}
@@ -177,7 +211,8 @@ func RenderRGBPixelBuffer(buf [][]RGB3) string {
 
 // renderHalfBlockRow draws one terminal row of half blocks, sending a colour only
 // when it changes and resetting once at the end of the row. The picture is the same
-// as renderHalfBlock per cell, at about 1.4x fewer bytes for a shuffle frame.
+// as renderHalfBlock per cell, at about 1.4x fewer bytes for a shuffle frame, and
+// colours in the xterm-256 palette (the card backs) go out in the short form.
 func renderHalfBlockRow(sb *strings.Builder, topRow, botRow []RGB3) {
 	n := len(topRow)
 	if len(botRow) > n {
@@ -187,7 +222,7 @@ func renderHalfBlockRow(sb *strings.Builder, topRow, botRow []RGB3) {
 	fgSet, bgSet := false, false
 	setFg := func(c RGB3) {
 		if !fgSet || fg != c {
-			sb.WriteString(fgColor(c[0], c[1], c[2]))
+			colourCode(sb, 38, c)
 			fg, fgSet = c, true
 		}
 	}
@@ -221,7 +256,7 @@ func renderHalfBlockRow(sb *strings.Builder, topRow, botRow []RGB3) {
 		default:
 			setFg(top)
 			if !bgSet || bg != bot {
-				sb.WriteString(bgColor(bot[0], bot[1], bot[2]))
+				colourCode(sb, 48, bot)
 				bg, bgSet = bot, true
 			}
 			sb.WriteString("▀")

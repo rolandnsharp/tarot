@@ -22,6 +22,9 @@ type model struct {
 	width    int
 	height   int
 	quitting bool
+	// backlog reports bytes sent to an SSH client but not yet acknowledged; nil
+	// when running locally.
+	backlog func() int
 
 	// Question input
 	question  string
@@ -89,6 +92,18 @@ func tickCmd() tea.Cmd {
 		return tickMsg(t)
 	})
 }
+
+// The screen a reading needs in full: three cards side by side (3 x 28 columns and
+// two gaps), and the cards above at least a few lines of text.
+const (
+	fullViewW = 90
+	fullViewH = 34
+)
+
+// maxLinkBacklog is how many unacknowledged bytes a client may have before the next
+// shuffle frame waits: about two frames, enough to keep a fast link busy at 20 fps
+// while a slow one gets fewer frames instead of a growing queue.
+const maxLinkBacklog = 64 << 10
 
 const typewriterInterval = 150 * time.Millisecond // ~200 wpm speaking pace
 
@@ -272,11 +287,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.anim.ScreenW = msg.Width
 		m.anim.ScreenH = msg.Height
+		m.textInput.Width = inputWidth(msg.Width)
 		return m, nil
 
 	case tickMsg:
 		if m.anim.Phase == PhaseReading {
 			return m, nil // no more animation ticks needed
+		}
+		// Hold the shuffle while the link is still delivering earlier frames: the
+		// view stays the same, so nothing new is sent, and the time-based motion
+		// catches up on the next frame the link can take.
+		if m.anim.Phase == PhaseShuffle && m.backlog != nil && m.backlog() > maxLinkBacklog {
+			return m, tickCmd()
 		}
 		prevDealt := m.anim.CardsDealt
 		prevShown := m.anim.CardsShown
@@ -400,6 +422,9 @@ func (m model) View() string {
 		s.WriteString("\n\n" + help)
 	}
 
+	if m.anim.Phase == PhaseQuestion {
+		return keepTop(s.String(), m.height)
+	}
 	return s.String()
 }
 
@@ -408,16 +433,45 @@ func (m model) renderIdle() string {
 	return lipgloss.Place(m.width, 24, lipgloss.Center, lipgloss.Center, back)
 }
 
+// inputWidth fits the question box to the terminal, leaving room for the "> " prompt.
+func inputWidth(termW int) int {
+	w := termW - 4
+	if w > 50 {
+		w = 50
+	}
+	if w < 10 {
+		w = 10
+	}
+	return w
+}
+
 func (m model) renderQuestion() string {
 	input := m.textInput.View()
 	w := m.textInput.Width + 2 // +2 for "> " prompt
 	inputBox := lipgloss.NewStyle().Width(w).MaxHeight(1).Render(input)
 	padded := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).
-		PaddingTop(1).PaddingBottom(4).Render(inputBox)
+		PaddingTop(1).Render(inputBox)
+
+	gap := "\n\n\n\n\n"
+	if m.width < fullViewW || m.height < fullViewH {
+		hint := fmt.Sprintf("small screen: zoom out to about %d x %d to see all three cards", fullViewW, fullViewH)
+		padded += "\n\n" + configHintStyle().Width(m.width).Render(hint)
+		gap = "\n\n"
+	}
 
 	back := GetCardBack()
 
-	return padded + "\n" + lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, back)
+	return padded + gap + lipgloss.Place(m.width, 0, lipgloss.Center, lipgloss.Top, back)
+}
+
+// keepTop cuts a view to the screen's height from the bottom. Left alone, the renderer
+// keeps the bottom of a view that's too tall, which would lose the question box.
+func keepTop(view string, height int) string {
+	lines := strings.Split(view, "\n")
+	if height > 0 && len(lines) > height {
+		lines = lines[:height]
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m model) renderShuffle() string {

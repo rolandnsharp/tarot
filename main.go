@@ -60,12 +60,15 @@ func runServer(port string) {
 	s, err := wish.NewServer(
 		wish.WithAddress(fmt.Sprintf(":%s", port)),
 		wish.WithHostKeyPath(keyPath),
+		rememberConn(),
 		wish.WithMiddleware(
 			bm.MiddlewareWithProgramHandler(func(sess ssh.Session) *tea.Program {
 				pty, _, _ := sess.Pty()
 				m := initialModel()
 				m.width = pty.Window.Width
 				m.height = pty.Window.Height
+				m.textInput.Width = inputWidth(m.width)
+				m.backlog = linkBacklog(sess)
 				return tea.NewProgram(m, append(bm.MakeOptions(sess), tea.WithAltScreen(), syncOutput(sess))...)
 			}, termenv.Ascii),
 			lm.Middleware(),

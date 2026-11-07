@@ -25,8 +25,10 @@ const (
 	washSettleTime   = 600 * time.Millisecond  // rest at center (visible deck)
 	washPauseTime    = 1500 * time.Millisecond // cards picked up, empty screen
 	shuffleDuration  = washBounceTime + washConvergeTime + washSettleTime + washPauseTime
-	washCardW = 28
+	washCardW        = 28
 	washCardH        = 44
+	washCount        = 22                     // the Major Arcana
+	washZInterval    = 750 * time.Millisecond // how often the layering is shuffled
 	dealInterval     = 400 * time.Millisecond
 	revealInterval   = 500 * time.Millisecond
 	frameInterval    = 50 * time.Millisecond
@@ -38,6 +40,10 @@ type WashCard struct {
 	Z      int // draw order: lower Z drawn first (behind)
 }
 
+// Velocities and per-step pulls below are per frameInterval. Each tick scales them by
+// the time since the last one, so a slow link that draws fewer frames still shuffles
+// for the same time at the same speeds.
+
 type AnimState struct {
 	Phase      Phase
 	StartTime  time.Time
@@ -46,10 +52,12 @@ type AnimState struct {
 	CardsShown int // 0-3: how many cards have been revealed
 
 	// Wash shuffle
-	WashCards   []WashCard
-	WashRGB     [][]RGB3 // card back pixel grid (RGB mode)
-	ScreenW     int         // terminal columns (= pixel width)
-	ScreenH     int         // terminal rows
+	WashCards []WashCard
+	WashRGB   [][]RGB3 // card back pixel grid (RGB mode)
+	ScreenW   int      // terminal columns (= pixel width)
+	ScreenH   int      // terminal rows
+	lastTick  time.Time
+	lastZ     time.Time
 }
 
 func NewAnimState() AnimState {
@@ -71,13 +79,15 @@ func (a *AnimState) Start() {
 	a.StartTime = time.Now()
 	a.Frame = 0
 	a.WashCards = nil // initialized lazily when screen size is known
+	a.lastTick = a.StartTime
+	a.lastZ = a.StartTime
 }
 
 func (a *AnimState) initWashCards() {
 	bufH := (a.ScreenH - 5) * 2
 	cx := float64(a.ScreenW-washCardW) / 2
 	cy := float64(bufH-washCardH) / 2
-	a.WashCards = make([]WashCard, len(Deck))
+	a.WashCards = make([]WashCard, washCount)
 	for i := range a.WashCards {
 		angle := rand.Float64() * 2 * math.Pi
 		speed := 3.75 + rand.Float64()*3.75
@@ -93,7 +103,15 @@ func (a *AnimState) initWashCards() {
 
 func (a *AnimState) Tick() {
 	a.Frame++
-	elapsed := time.Since(a.StartTime)
+	now := time.Now()
+	elapsed := now.Sub(a.StartTime)
+	// f: how many nominal frames this tick stands for, capped so a long stall
+	// doesn't fling the cards across the screen.
+	f := float64(now.Sub(a.lastTick)) / float64(frameInterval)
+	if f > 5 {
+		f = 5
+	}
+	a.lastTick = now
 
 	switch a.Phase {
 	case PhaseShuffle:
@@ -118,8 +136,9 @@ func (a *AnimState) Tick() {
 			a.WashCards = a.WashCards[:0] // cards picked up, nothing to render
 		}
 
-		// Re-randomize all Z values every ~15 frames for dynamic layering
-		if !converging && !settling && !pausing && a.Frame%15 == 0 {
+		// Re-randomize all Z values now and then for dynamic layering
+		if !converging && !settling && !pausing && now.Sub(a.lastZ) >= washZInterval {
+			a.lastZ = now
 			for k := range a.WashCards {
 				a.WashCards[k].Z = rand.Intn(1000)
 			}
@@ -138,24 +157,26 @@ func (a *AnimState) Tick() {
 				// Lerp toward center with increasing strength
 				t := float64(elapsed-washBounceTime) / float64(washConvergeTime)
 				ease := t * t * t // cubic ease-in
-				pull := 0.1 + ease*0.3
+				pull := 1 - math.Pow(1-(0.1+ease*0.3), f)
 				c.X += (cx - c.X) * pull
 				c.Y += (cy - c.Y) * pull
-				c.VX *= 0.85
-				c.VY *= 0.85
-				c.X += c.VX
-				c.Y += c.VY
+				damp := math.Pow(0.85, f)
+				c.VX *= damp
+				c.VY *= damp
+				c.X += c.VX * f
+				c.Y += c.VY * f
 			} else {
 				// Free bounce with random perturbation
-				c.VX += (rand.Float64() - 0.5) * 0.75
-				c.VY += (rand.Float64() - 0.5) * 0.75
+				jitter := 0.75 * math.Sqrt(f)
+				c.VX += (rand.Float64() - 0.5) * jitter
+				c.VY += (rand.Float64() - 0.5) * jitter
 				speed := math.Sqrt(c.VX*c.VX + c.VY*c.VY)
 				if speed > 6 {
 					c.VX = c.VX / speed * 6
 					c.VY = c.VY / speed * 6
 				}
-				c.X += c.VX
-				c.Y += c.VY
+				c.X += c.VX * f
+				c.Y += c.VY * f
 
 				// Bounce off edges
 				if c.X < 0 {
